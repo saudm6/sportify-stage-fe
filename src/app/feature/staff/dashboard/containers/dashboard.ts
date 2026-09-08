@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup } from '@angular/forms';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import { DashboardPage } from '../components/dashboard-page';
@@ -24,11 +24,11 @@ export class Dashboard {
   readonly applied = signal<DashboardFilters>({ ...dateRange('month'), branchPublicId: '', sportPublicId: '' });
   readonly preset = signal<DatePreset>('month');
   readonly form = new FormGroup({
-    from: new FormControl('', { nonNullable: true }),
-    to: new FormControl('', { nonNullable: true }),
+    from: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    to: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     branchPublicId: new FormControl('', { nonNullable: true }),
     sportPublicId: new FormControl('', { nonNullable: true }),
-  });
+  }, { validators: control => validFilters(control.getRawValue()) ? null : { invalidFilters: true } });
   readonly report = signal<BookingReport | null>(null);
   readonly options = signal<BookingReport['availableFilters']>({ branches: [], sports: [] });
   readonly loading = signal(false);
@@ -89,7 +89,8 @@ export class Dashboard {
 
   async apply() {
     const filters = this.form.getRawValue();
-    if (!validFilters(filters)) {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       this.validation.set('Choose a valid date range and branch or sport, then Apply.');
       return;
     }

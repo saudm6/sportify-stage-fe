@@ -72,6 +72,25 @@ describe('Staff dashboard', () => {
     expect(harness.routeNativeElement!.textContent).toContain('valid date range');
   });
 
+  it('validates required dates, date limits and range order in the reactive form', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/staff/dashboard?from=2026-09-01&to=2026-09-30', Dashboard);
+    http.expectOne(req => req.url.endsWith('/staff/booking-report')).flush(response);
+    for (const from of ['', '2026-02-30', '9999-12-31', '2026-10-01']) {
+      page.form.controls.from.setValue(from);
+      expect(page.form.invalid).toBe(true);
+      await page.apply();
+      http.expectNone(req => req.url.endsWith('/staff/booking-report'));
+    }
+    page.form.controls.from.setValue('2026-09-01');
+    expect(page.form.valid).toBe(true);
+    harness.detectChanges();
+    for (const input of harness.routeNativeElement!.querySelectorAll('input[type="date"]')) {
+      expect(input.hasAttribute('required')).toBe(false);
+      expect(input.hasAttribute('max')).toBe(false);
+    }
+  });
+
   it('persists the default month in the URL and resets every filter', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/staff/dashboard');
