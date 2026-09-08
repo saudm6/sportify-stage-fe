@@ -11,8 +11,8 @@
       }
     </fieldset>
     <div class="filter-fields">
-      <label>From<input type="date" formControlName="from" aria-required="true" (input)="choosePreset.emit('custom')" /></label>
-      <label>To<input type="date" formControlName="to" aria-required="true" (input)="choosePreset.emit('custom')" /></label>
+      <label>From (required)<input type="date" formControlName="from" (input)="choosePreset.emit('custom')" /></label>
+      <label>To (required)<input type="date" formControlName="to" (input)="choosePreset.emit('custom')" /></label>
       <label><span id="branch-label">Branch</span><select formControlName="branchPublicId" aria-labelledby="branch-label"><option value="">All branches</option>
         @for (branch of options().branches; track branch.publicId) { <option [value]="branch.publicId">{{ branch.nameEn || branch.nameAr }}</option> }
       </select></label>
