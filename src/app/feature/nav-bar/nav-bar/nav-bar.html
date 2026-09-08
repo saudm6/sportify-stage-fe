@@ -1,6 +1,9 @@
 <nav class="main-navbar">
     <div class="navbar-container">
         <div class="navbar-links">
+            @if (hasStaffAccess()) {
+                <a class="navbar-link" routerLink="/staff/dashboard" routerLinkActive="active">Dashboard</a>
+            }
             <a class="navbar-link" routerLink="/product" routerLinkActive="active">
                 Products
             </a>

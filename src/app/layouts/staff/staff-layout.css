@@ -1,0 +1,12 @@
+:host { display: block; font-family: 'Trebuchet MS', Arial, sans-serif; }
+.staff-shell { display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: calc(100vh - 64px); background: #f4f7fa; }
+aside { background: #22578b; color: white; padding: 30px 20px; display: flex; flex-direction: column; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 25px; font-weight: 700; color: white; text-decoration: none; }
+svg { width: 34px; height: 34px; fill: none; stroke: #c3deed; stroke-width: 1.3; }
+.area { color: #d1e2f1; font-size: 13px; margin: 12px 0 32px; }
+nav a { display: block; color: white; padding: 13px 16px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 700; }
+nav a.active { background: white; color: #22578b; }
+a:focus-visible { outline: 3px solid #ffc27b; outline-offset: 4px; }
+.sidebar-note { margin-top: auto; padding-top: 40px; font-size: 12px; line-height: 1.5; color: #d1e2f1; max-width: 140px; }
+.content { min-width: 0; }
+@media (max-width: 900px) { .staff-shell { grid-template-columns: 1fr; } aside { padding: 18px 24px; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px; } .area, .sidebar-note { display: none; } .brand { font-size: 22px; } }

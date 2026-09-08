@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { staffGuard } from './core/staff-access';
 import { AllUsersList } from './feature/user/containers/all-users-list/all-users-list';
 import { RegisterUserList } from './feature/user/containers/register-user-list/register-user-list';
 import { LoginUserList } from './feature/user/containers/login-user-list/login-user-list';
@@ -8,6 +9,16 @@ import { ProductDisplayList } from './feature/product/containers/product-display
 import { DisplayOrderLineItemList } from './feature/order-line-item/containers/display-order-line-item-list/display-order-line-item-list';
 import { DisplayOrderList } from './feature/order/containers/display-order-list/display-order-list';
 export const routes: Routes = [
+    {
+        path: 'staff',
+        canActivate: [staffGuard],
+        canActivateChild: [staffGuard],
+        loadComponent: () => import('./layouts/staff/staff-layout').then(m => m.StaffLayout),
+        children: [
+            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+            { path: 'dashboard', loadChildren: () => import('./feature/staff/dashboard/dashboard.routes').then(m => m.dashboardRoutes) },
+        ],
+    },
     { path: '', redirectTo: 'login', pathMatch: 'full' },
     { path: 'users', component: AllUsersList, canActivate: [authGuard] },
     { path: 'users/register', component: RegisterUserList },
