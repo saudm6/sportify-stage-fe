@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { hasAnyRole } from '../../../core/role.guard';
 
 @Component({
   selector: 'app-nav-bar',
@@ -7,4 +8,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './nav-bar.html',
   styleUrl: './nav-bar.css',
 })
-export class NavBar {}
+export class NavBar {
+  readonly hasAnyRole = hasAnyRole;
+}

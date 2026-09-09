@@ -1,0 +1,36 @@
+:host { display: block; color: #24374b; font-family: 'Trebuchet MS', Arial, sans-serif; }
+main { max-width: 1360px; margin: auto; padding: clamp(20px, 4vw, 52px); }
+h1 { margin: 0; font-size: clamp(28px, 3vw, 38px); font-weight: 700; letter-spacing: -1px; }
+h2 { font-size: 21px; margin: 0 0 6px; } h3 { font-size: 18px; margin: 0; } h4 { font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+p { margin: 8px 0; line-height: 1.5; max-width: 80ch; }
+.page-heading, .results-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.page-heading { margin-bottom: 30px; } .page-heading p, .report-context, .hint, .scope-note, .results-heading p { color: #586a7b; }
+.report-context { text-align: right; font-weight: 700; } .report-context span { display: block; font-weight: 400; font-size: 13px; margin-top: 4px; }
+.filters { background: white; border: 1px solid #d8e2e9; border-radius: 12px; padding: 22px; }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; border: 0; padding: 0; margin: 0 0 20px; }
+legend { font-weight: 700; margin-bottom: 10px; font-size: 14px; }
+button, input, select { font: inherit; border: 1px solid #b8c8d4; border-radius: 6px; background: white; padding: 10px 12px; min-height: 44px; color: inherit; }
+button { cursor: pointer; font-weight: 600; white-space: nowrap; } button:hover { background: #edf3f8; }
+button[aria-pressed='true'], button.primary { background: #22578b; border-color: #22578b; color: white; }
+button.primary:hover { background: #18446f; }
+button:disabled { cursor: default; color: #677785; background: #edf1f4; }
+:is(button, input, select):focus-visible { outline: 3px solid #c16b25; outline-offset: 3px; }
+.filter-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto; align-items: end; gap: 14px; }
+label { display: grid; gap: 7px; font-size: 14px; font-weight: 600; } input, select { width: 100%; min-width: 0; box-sizing: border-box; font-weight: 400; }
+.hint { font-size: 12px; margin-top: 12px; } .error { color: #a52c28; }
+.results { margin-top: 34px; } .results-heading p, .scope-note { font-size: 13px; }
+.bookings-link { text-align: right; } small { display: block; font-size: 11px; margin-top: 5px; color: #586a7b; }
+.metrics { display: grid; grid-template-columns: 1fr 1.3fr 1fr; margin: 24px 0 30px; background: #e6eff7; border-radius: 10px; padding: 25px 0; }
+.metrics > div { padding: 0 26px; } .metrics > div + div { border-left: 1px solid #bccfdf; }
+dt { font-size: 14px; font-weight: 600; } dt span { font-size: 11px; margin-left: 4px; }
+dd { margin: 12px 0 0; font-size: clamp(25px, 3vw, 38px); font-variant-numeric: tabular-nums; letter-spacing: -1px; overflow-wrap: anywhere; }
+.breakdowns { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.breakdown { min-width: 0; padding: 24px; border: 1px solid #d8e2e9; border-radius: 10px; background: white; }
+.breakdown .hint { margin-top: 4px; } ul { list-style: none; padding: 0; margin: 24px 0 0; } li + li { margin-top: 24px; }
+.row-heading, .row-detail { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.row-heading strong { white-space: nowrap; font-variant-numeric: tabular-nums; } .row-heading strong span { font-weight: 400; font-size: 11px; }
+.bar-track { height: 8px; border-radius: 3px; background: #edf2f6; margin-top: 12px; overflow: hidden; } .bar { height: 100%; background: #437bac; }
+.row-detail { font-size: 12px; color: #586a7b; } .status, .empty { padding: 28px; background: white; border: 1px solid #d8e2e9; border-radius: 10px; margin: 20px 0; } .status button { margin-top: 12px; }
+.no-data { font-size: 14px; color: #586a7b; }
+@media (max-width: 1100px) { .filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .metrics > div { padding: 0 16px; } }
+@media (max-width: 700px) { .breakdowns, .metrics { grid-template-columns: 1fr; } .metrics { padding: 0 20px; } .metrics > div { padding: 18px 0; } .metrics > div + div { border-left: 0; border-top: 1px solid #bccfdf; } .page-heading, .results-heading { align-items: start; flex-direction: column; } .report-context, .bookings-link { text-align: left; } .row-heading, .row-detail { flex-wrap: wrap; } }

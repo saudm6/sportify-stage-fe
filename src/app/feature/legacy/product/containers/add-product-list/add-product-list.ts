@@ -3,7 +3,6 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { RxState, rxState } from '@rx-angular/state';
 import { finalize, Observable } from 'rxjs';
-import { contains } from '../../../../shared/functions/index';
 import { ProductService } from '../../service/product.service';
 import { AddProductPage } from '../../components/add-product-page/add-product-page';
 import { AsyncPipe } from '@angular/common';
