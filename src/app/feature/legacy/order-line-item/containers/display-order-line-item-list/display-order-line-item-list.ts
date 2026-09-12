@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, } from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { PAGE_PATHS } from '../../../../../core/urls';
 import { RxState, rxState } from '@rx-angular/state';
 import { AsyncPipe } from '@angular/common';
 import { finalize, Observable } from 'rxjs';
@@ -64,7 +65,7 @@ export class DisplayOrderLineItemList {
     )
     .subscribe({
       next: () => {
-        this.router.navigate(['order']);
+        this.router.navigate([`/${PAGE_PATHS.orders}`]);
       },
       error: (error) => {
         console.error('Unable to get Add Order Line Items to Orders', error)

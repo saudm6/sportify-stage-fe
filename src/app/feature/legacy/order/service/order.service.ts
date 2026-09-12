@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import { API_BASE_URL } from '../../../../core/urls';
 import { OrderStatusRequest, OrderResponse } from '../models/';
 
 @Injectable({
@@ -8,7 +9,7 @@ import { OrderStatusRequest, OrderResponse } from '../models/';
 })
 export class OrderService {
   protected httpClient = inject(HttpClient);
-  protected apiOrderUrl = `http://localhost:5210/api/order`;
+  protected apiOrderUrl = `${API_BASE_URL}/order`;
 
   addOrder() : Observable<void> {
     return this.httpClient.post<void>(`${this.apiOrderUrl}`, null);

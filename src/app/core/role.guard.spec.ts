@@ -2,54 +2,72 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { hasAnyRole, roleGuard } from './role.guard';
+import { AuthService } from './auth.service';
+import { roleGuard } from './role.guard';
 
 @Component({ template: '' })
 class Page {}
 
+const token = (roles: unknown, exp = Date.now() / 1000 + 300) =>
+  `e30.${btoa(JSON.stringify({ exp, 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': roles }))}.signature`;
+
 describe('Role guard', () => {
-  const token = (roles: unknown, exp = Date.now() / 1000 + 300) =>
-    `e30.${btoa(JSON.stringify({ exp, 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': roles }))}.signature`;
-
-  afterEach(() => localStorage.removeItem('authToken'));
-
-  it('accepts any configured role as a string or multi-role array', () => {
-    expect(hasAnyRole(['ADMIN'], token('ADMIN'))).toBe(true);
-    expect(hasAnyRole(['ADMIN'], token(['USER', 'ADMIN']))).toBe(true);
-    expect(hasAnyRole(['USER', 'ADMIN'], token('USER'))).toBe(true);
-    expect(hasAnyRole(['MANAGER'], token('MANAGER'))).toBe(true);
-  });
-
-  it('rejects disallowed roles, missing roles, expired and malformed tokens', () => {
-    for (const value of [null, 'invalid', token('USER'), token(undefined), token('ADMIN', 1)]) {
-      expect(hasAnyRole(['ADMIN'], value)).toBe(false);
-    }
-    expect(hasAnyRole([], token('ADMIN'))).toBe(false);
-  });
-
-  it('enforces section and child roles on direct visits and subsequent navigation', async () => {
+  beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({ providers: [provideRouter([
       { path: 'login', component: Page },
-      { path: 'staff', canActivate: [roleGuard], canActivateChild: [roleGuard], data: { allowedRoles: ['ADMIN', 'MANAGER'] }, children: [
+      { path: 'product', component: Page, canActivate: [roleGuard], data: { allowedRoles: ['USER'] } },
+      { path: 'staff', canActivate: [roleGuard], canActivateChild: [roleGuard], data: { allowedRoles: ['ADMIN'] }, children: [
         { path: 'dashboard', component: Page },
-        { path: 'restricted', component: Page, data: { allowedRoles: ['ADMIN'] } },
+        { path: 'restricted', component: Page, data: { allowedRoles: ['USER'] } },
       ] },
       { path: 'unconfigured', component: Page, canActivate: [roleGuard] },
     ])] });
+  });
+  afterEach(() => localStorage.clear());
+
+  it('rejects malformed role arrays and unsupported-only sessions', () => {
+    const auth = TestBed.inject(AuthService);
+    for (const roles of [['ADMIN', 7], 'MANAGER']) {
+      localStorage.setItem('authToken', token(roles));
+      expect(auth.hasAnyRole(['ADMIN', 'MANAGER'])).toBe(false);
+    }
+  });
+
+  it('sends signed-out, expired and malformed sessions to plain login', async () => {
     const harness = await RouterTestingHarness.create();
     const router = TestBed.inject(Router);
-    localStorage.setItem('authToken', token('MANAGER'));
+    for (const value of ['', 'invalid', token('ADMIN', 1)]) {
+      localStorage.setItem('authToken', value);
+      await harness.navigateByUrl('/staff/dashboard?from=2026-09-01#report');
+      expect(router.url).toBe('/login');
+      expect(localStorage.getItem('authToken')).toBeNull();
+    }
+  });
+
+  it('enforces area and child roles, then rechecks after logout', async () => {
+    const harness = await RouterTestingHarness.create();
+    const router = TestBed.inject(Router);
+    const auth = TestBed.inject(AuthService);
+    localStorage.setItem('authToken', token('USER'));
+    await harness.navigateByUrl('/staff/dashboard');
+    expect(router.url).toBe('/product');
+    localStorage.setItem('authToken', token('ADMIN'));
     await harness.navigateByUrl('/staff/dashboard');
     expect(router.url).toBe('/staff/dashboard');
     await harness.navigateByUrl('/staff/restricted');
-    expect(router.url).toBe('/login');
-    localStorage.setItem('authToken', token('ADMIN'));
+    expect(router.url).toBe('/staff/dashboard');
+    await harness.navigateByUrl('/product');
+    expect(router.url).toBe('/staff/dashboard');
+    localStorage.setItem('authToken', token(['USER', 'ADMIN']));
     await harness.navigateByUrl('/staff/restricted');
     expect(router.url).toBe('/staff/restricted');
-    localStorage.setItem('authToken', token('USER'));
-    await harness.navigateByUrl('/staff/dashboard');
-    expect(router.url).toBe('/login');
+    await harness.navigateByUrl('/product');
+    expect(router.url).toBe('/product');
     await harness.navigateByUrl('/unconfigured');
+    expect(router.url).toBe('/staff/dashboard');
+    auth.logout();
+    await harness.navigateByUrl('/product');
     expect(router.url).toBe('/login');
   });
 });

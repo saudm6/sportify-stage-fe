@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import { API_BASE_URL } from '../../../core/urls';
 import {
   UpdateUserRequest,
   UserData,
@@ -13,7 +14,7 @@ import { jwtDecode, type JwtPayload } from 'jwt-decode';
 })
 export class UserService {
   protected httpClient = inject(HttpClient);
-  protected apiServiceUrl = `http://localhost:5210/api/users`;
+  protected apiServiceUrl = `${API_BASE_URL}/users`;
 
   getPagedUsers(pageNumber: number, pageSize: number): Observable<UserPagedResult<UserData>> {
     return this.httpClient

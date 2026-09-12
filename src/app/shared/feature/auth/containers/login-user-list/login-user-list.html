@@ -1,0 +1,9 @@
+@if (vm$ | async; as vm) {
+  <app-login-user-page
+    [userForm]="userForm"
+    [isSubmitting]="vm.isSubmitting"
+    [errorMessage]="vm.errorMessage"
+    (submitted)="loginUser()"
+    (cancelled)="cancel()"
+  />
+}
