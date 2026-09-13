@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import { API_BASE_URL } from '../../../../core/urls';
 import {
   CreateProduct, ProductDataUpdate
 } from '../models/index';
@@ -11,7 +12,7 @@ import { ProductDisplay } from '../models/product-display';
 })
 export class ProductService {
   protected httpClient = inject(HttpClient);
-  protected apiProductUrl = `http://localhost:5210/api/product`;
+  protected apiProductUrl = `${API_BASE_URL}/product`;
 
 
   createProduct(request: CreateProduct): Observable<ProductDisplay>{

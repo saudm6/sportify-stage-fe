@@ -1,8 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { LoginUserPage } from '../../components/page/login-user-page/login-user-page';
-import { AuthService } from '../../../../shared/service/auth.service';
+import { LoginUserPage } from '../../components/login-user-page/login-user-page';
+import { AuthService } from '../../../../../core/auth.service';
+import { LOGIN_URL } from '../../../../../core/urls';
+import { AuthApiService } from '../../service/auth-api.service';
 import { rxState, RxState } from '@rx-angular/state';
 import { finalize, Observable } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
@@ -22,14 +26,14 @@ type ViewModel = LoginUserState;
   styleUrl: './login-user-list.css',
 })
 export class LoginUserList {
-
   private readonly state = rxState<LoginUserState>();
 
   vm$: Observable<ViewModel>;
 
-
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
+  private readonly authApi = inject(AuthApiService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
 
   readonly userForm = this.formBuilder.nonNullable.group({
@@ -43,6 +47,9 @@ export class LoginUserList {
     });
 
     this.vm$ = this.state.select();
+    if (this.auth.getToken()) {
+      void this.router.navigateByUrl(this.auth.destination());
+    }
   }
 
   loginUser(): void {
@@ -59,39 +66,41 @@ export class LoginUserList {
       errorMessage: '',
     });
 
-    this.authService
+    this.authApi
       .loginUser(this.userForm.getRawValue())
       .pipe(
+        takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.state.set({ isSubmitting: false });
         }),
       )
       .subscribe({
         next: (response) => {
-          if (!response.hasAuthority || !response.token) {
-            this.state.set({ errorMessage: 'Invalid Email or Password' });
+          const errorMessage = this.auth.acceptLogin(response);
+          if (errorMessage) {
+            this.state.set({ errorMessage });
             return;
           }
 
-          localStorage.setItem('authToken', response.token);
-          this.router.navigate(['/product']);
+          void this.router.navigateByUrl(this.auth.destination());
         },
-        error: (error) => {
-          console.error('Unable to login user: ', error);
-          this.state.set({ errorMessage: 'Unable to login user' });
+        error: (error: unknown) => {
+          const status = error instanceof HttpErrorResponse ? error.status : undefined;
+          this.state.set({
+            errorMessage:
+              status === 401 || status === 403
+                ? 'Invalid email or password.'
+                : status === 0 || (status !== undefined && status >= 500)
+                  ? 'The server is unavailable. Please try again.'
+                  : 'Unable to sign in. Please try again.',
+          });
         },
       });
   }
 
   cancel(): void {
     if (!this.state.get('isSubmitting')) {
-      this.router.navigate(['/login']);
-    }
-  }
-
-  goToRegister(): void {
-    if (!this.state.get('isSubmitting')) {
-      this.router.navigate(['/users/register']);
+      this.router.navigate([LOGIN_URL]);
     }
   }
 }

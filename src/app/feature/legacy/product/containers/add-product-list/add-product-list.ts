@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { PAGE_PATHS } from '../../../../../core/urls';
 import { RxState, rxState } from '@rx-angular/state';
 import { finalize, Observable } from 'rxjs';
 import { ProductService } from '../../service/product.service';
@@ -76,7 +77,7 @@ export class AddProductList {
   )
   .subscribe({
     next: () => {
-      this.router.navigate(['/product'])
+      this.router.navigate([`/${PAGE_PATHS.products}`])
     },
     error: (error) => {
       console.error('Unable to add product:', error);
@@ -90,7 +91,7 @@ export class AddProductList {
 
   cancel(): void {
     if (!this.state.get('isSubmitting')) {
-      this.router.navigate(['/product']);
+      this.router.navigate([`/${PAGE_PATHS.products}`]);
     }
   }
 }

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/role.guard';
+import { PAGE_PATHS } from '../../core/urls';
 
 export const staffRoutes: Routes = [
   {
@@ -9,8 +10,8 @@ export const staffRoutes: Routes = [
     data: { allowedRoles: ['ADMIN'] },
     loadComponent: () => import('../../layouts/staff/staff-layout').then(m => m.StaffLayout),
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', loadChildren: () => import('./dashboard/dashboard.routes').then(m => m.dashboardRoutes) },
+      { path: '', redirectTo: PAGE_PATHS.dashboard, pathMatch: 'full' },
+      { path: PAGE_PATHS.dashboard, loadChildren: () => import('./dashboard/dashboard.routes').then(m => m.dashboardRoutes) },
     ],
   },
 ];

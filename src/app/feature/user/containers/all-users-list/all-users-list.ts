@@ -6,6 +6,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { EditUsersDialog } from '../../components/dialog/edit-users-dialog/edit-users-dialog';
 import { DeleteUserDialog } from '../../components/dialog/delete-user-dialog/delete-user-dialog';
 import { Router } from '@angular/router';
+import { PAGE_PATHS } from '../../../../core/urls';
 import { rxState, RxState } from '@rx-angular/state';
 import { finalize, Observable } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
@@ -74,7 +75,7 @@ export class AllUsersList implements OnInit {
   }
 
   registerUser(): void {
-    this.router.navigate(['users/register']);
+    this.router.navigate([`/${PAGE_PATHS.register}`]);
   }
 
   editUser(userId: string): void {

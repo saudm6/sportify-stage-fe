@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { RegisterUserPage } from '../../components/page/register-user-page/register-user-page';
-import { AuthService } from '../../../../shared/service';
+import { LOGIN_URL } from '../../../../../core/urls';
+import { RegisterUserPage } from '../../components/register-user-page/register-user-page';
+import { AuthApiService } from '../../service/auth-api.service';
 import { rxState, RxState } from '@rx-angular/state';
 import { finalize, Observable } from 'rxjs';
-import { contains } from '../../../../shared/functions/index';
+import { contains } from '../../../../functions/index';
 import { AsyncPipe } from '@angular/common';
 
 interface RegisterUserState {
@@ -29,7 +30,7 @@ export class RegisterUserList {
   vm$: Observable<ViewModel>;
 
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
+  private readonly authService = inject(AuthApiService);
   private readonly router = inject(Router);
 
   readonly userForm = this.formBuilder.nonNullable.group({
@@ -79,7 +80,7 @@ export class RegisterUserList {
       )
       .subscribe({
         next: () => {
-          this.router.navigate(['/login']);
+          this.router.navigate([LOGIN_URL]);
         },
         error: (error) => {
           
@@ -97,7 +98,7 @@ export class RegisterUserList {
   }
   cancel(): void {
     if (!this.state.get('isSubmitting')) {
-      this.router.navigate(['/login']);
+      this.router.navigate([LOGIN_URL]);
     }
   }
 }

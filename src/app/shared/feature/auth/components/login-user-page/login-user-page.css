@@ -214,6 +214,28 @@
   color: #98a2b3;
 }
 
+.password-input {
+  position: relative;
+}
+
+.password-input input {
+  padding-right: 64px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  border: 0;
+  background: transparent;
+  color: #4f46e5;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transform: translateY(-50%);
+}
+
 .form-field input:hover {
   border-color: #98a2b3;
   background: #fcfcfd;
@@ -296,7 +318,8 @@
 }
 
 .button:focus-visible,
-.back-button:focus-visible {
+.back-button:focus-visible,
+.password-toggle:focus-visible {
   outline: 3px solid rgb(79 70 229 / 22%);
   outline-offset: 2px;
 }
@@ -374,4 +397,5 @@
 .register-button {
   width: 100%;
   margin-top: 18px;
+  text-decoration: none;
 }

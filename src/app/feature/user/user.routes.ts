@@ -1,8 +1,7 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '../../shared/guard/auth.guard';
+import { roleGuard } from '../../core/role.guard';
+import { PAGE_PATHS } from '../../core/urls';
 
 export const userRoutes: Routes = [
-  { path: 'users', canActivate: [authGuard], loadComponent: () => import('./containers/all-users-list/all-users-list').then(m => m.AllUsersList) },
-  { path: 'users/register', loadComponent: () => import('./containers/register-user-list/register-user-list').then(m => m.RegisterUserList) },
-  { path: 'login', loadComponent: () => import('./containers/login-user-list/login-user-list').then(m => m.LoginUserList) },
+  { path: PAGE_PATHS.users, canActivate: [roleGuard], data: { allowedRoles: ['USER'] }, loadComponent: () => import('./containers/all-users-list/all-users-list').then(m => m.AllUsersList) },
 ];

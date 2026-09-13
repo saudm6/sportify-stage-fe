@@ -7,6 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 // import { EditUsersDialog } from '../../components/dialog/edit-users-dialog/edit-users-dialog';
 // import { DeleteUserDialog } from '../../components/dialog/delete-user-dialog/delete-user-dialog';
 import { Router } from '@angular/router';
+import { PAGE_PATHS } from '../../../../../core/urls';
 import { RxState, rxState } from '@rx-angular/state';
 import { AsyncPipe } from '@angular/common';
 import { finalize, Observable } from 'rxjs';
@@ -58,7 +59,7 @@ export class ProductDisplayList {
   }
 
   goToAddProduct(): void {
-    this.router.navigate(['/product/add']);
+    this.router.navigate([`/${PAGE_PATHS.addProduct}`]);
   }
 
   addOrderLineItem(items: {

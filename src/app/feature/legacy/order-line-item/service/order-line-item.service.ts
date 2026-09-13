@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import { API_BASE_URL } from '../../../../core/urls';
 import {
   OrderLineItemRequest,
   OrderLineItemResponse
@@ -11,7 +12,7 @@ import {
 })
 export class OrderLineItemService {
   protected httpClient = inject(HttpClient);
-  protected apiOrderLineItemUrl = `http://localhost:5210/api/order_line_item`;
+  protected apiOrderLineItemUrl = `${API_BASE_URL}/order_line_item`;
 
   addOrderLineItem(request: OrderLineItemRequest) : Observable<void> {
     return this.httpClient.post<void>(`${this.apiOrderLineItemUrl}`, request);
