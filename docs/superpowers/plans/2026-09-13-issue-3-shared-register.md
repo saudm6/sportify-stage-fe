@@ -124,9 +124,9 @@ Explicit construction also prevents extra form properties from becoming API fiel
 
 ```ts
 readonly userForm = this.formBuilder.nonNullable.group({
-  name: ['', [Validators.required, Validators.maxLength(150), contains(/\S/, 'blank')]],
+  name: ['', [Validators.required, contains(/\S/, 'blank')]],
   contactNumber: ['', [Validators.required, Validators.maxLength(30), contains(/\S/, 'blank')]],
-  email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
+  email: ['', [Validators.required, Validators.email]],
   password: ['', [
     Validators.required, Validators.minLength(8),
     contains(/[A-Z]/, 'uppercase'), contains(/[a-z]/, 'lowercase'), contains(/[0-9]/, 'number'),
@@ -261,3 +261,11 @@ Implemented and reviewed. The verified development USER mapping is `1`. The back
 - Isolated API/PostgreSQL helpers were stopped. Backend application source and application data were not changed. Browser evidence lives locally under `E:/sportify/28_8_2026/build-artifacts/issue-3-*`; API evidence is recorded in `E:/sportify/28_8_2026/issue-3-api-verification.md`.
 - Final independent review found no actionable implementation defects. Its route-assertion and stale-plan-documentation findings were addressed.
 - Release limitation: deploy the verified USER-only backend enforcement and confirm the target environment's USER mapping before publishing this frontend. No deployment, push, merge or issue closure was performed.
+
+## Owner review adjustments — 2026-09-13
+
+- Error selection and message construction belong in the smart registration container. The page now receives `fieldErrors` and only renders messages and their accessibility attributes. Container-derived errors react to group and individual control events, including blur after another field was already touched.
+- Removed the explicit frontend name maximum of 150 and email maximum of 255 as requested. Required/blank checks, email format validation and contact/password rules remain. Backend limits and returned validation messages remain authoritative.
+- Kept the existing registration-success handoff to Login, as required by issue #3. Its page accepts a message from the Login container and does not decide registration state.
+- Public registration still sends the verified development USER role ID 1. This is not a general account-role default; other account roles and staff provisioning are outside this public endpoint.
+- Follow-up verification: 59 auth/core tests passed, desktop/mobile browser checks passed, production build succeeded with the existing stylesheet warnings, and independent review found no actionable defects.

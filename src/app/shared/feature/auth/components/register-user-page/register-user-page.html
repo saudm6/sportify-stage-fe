@@ -22,7 +22,7 @@
       >
         <div class="form-content">
           <div class="form-grid">
-            @let nameError = fieldError('name', 'Name');
+            @let nameError = fieldErrors()['name'];
             <div class="form-field">
               <label class="field-label" for="register-name">Name</label>
               <input
@@ -39,7 +39,7 @@
                 <span id="register-name-error" class="field-error">{{ nameError }}</span>
               }
             </div>
-            @let contactError = fieldError('contactNumber', 'Contact number');
+            @let contactError = fieldErrors()['contactNumber'];
             <div class="form-field">
               <label class="field-label" for="register-contactNumber">Contact number</label>
               <input
@@ -58,7 +58,7 @@
                 }}</span>
               }
             </div>
-            @let emailError = fieldError('email', 'Email address');
+            @let emailError = fieldErrors()['email'];
             <div class="form-field form-field-wide">
               <label class="field-label" for="register-email">Email address</label>
               <input
@@ -75,7 +75,7 @@
                 <span id="register-email-error" class="field-error">{{ emailError }}</span>
               }
             </div>
-            @let passwordError = fieldError('password', 'Password');
+            @let passwordError = fieldErrors()['password'];
             <div class="form-field">
               <label class="field-label" for="register-password">Password</label>
               <input
@@ -92,7 +92,7 @@
                 <span id="register-password-error" class="field-error">{{ passwordError }}</span>
               }
             </div>
-            @let confirmationError = fieldError('confirmPassword', 'Password confirmation');
+            @let confirmationError = fieldErrors()['confirmPassword'];
             <div class="form-field">
               <label class="field-label" for="register-confirmPassword">Confirm password</label>
               <input

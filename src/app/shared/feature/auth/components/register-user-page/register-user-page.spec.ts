@@ -42,4 +42,28 @@ describe('RegisterUserPage', () => {
     expect(fixture.nativeElement.querySelector('.back-button').getAttribute('href')).toBe('/login');
     expect(fixture.nativeElement.textContent).toContain('Create account');
   });
+
+  it('renders error messages supplied by the container without inspecting validation', () => {
+    fixture.componentRef.setInput('fieldErrors', {
+      name: 'Enter your name.',
+      confirmPassword: 'Passwords do not match.',
+    });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-name-error')?.textContent).toBe(
+      'Enter your name.',
+    );
+    expect(
+      fixture.nativeElement
+        .querySelector('#register-confirmPassword')
+        ?.getAttribute('aria-invalid'),
+    ).toBe('true');
+    fixture.componentRef.setInput('fieldErrors', {});
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-name-error')).toBeNull();
+    expect(
+      fixture.nativeElement
+        .querySelector('#register-confirmPassword')
+        ?.getAttribute('aria-invalid'),
+    ).toBe('false');
+  });
 });

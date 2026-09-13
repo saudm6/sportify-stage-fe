@@ -41,6 +41,27 @@ describe('RegisterUserList', () => {
   });
   afterEach(() => http.verify());
 
+  it('updates supplied errors when each field is touched or corrected', () => {
+    const name = form.get('name')!;
+    const email = form.get('email')!;
+    name.setValue('');
+    email.setValue('invalid');
+    name.markAsTouched();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-name-error')?.textContent).toContain(
+      'required',
+    );
+    expect(fixture.nativeElement.querySelector('#register-email-error')).toBeNull();
+    email.markAsTouched();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-email-error')?.textContent).toContain(
+      'valid email',
+    );
+    email.setValue('correct@example.com');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-email-error')).toBeNull();
+  });
+
   it('posts the exact customer payload once and returns to Login without a session', async () => {
     component.registerUser();
     component.registerUser();
@@ -96,9 +117,7 @@ describe('RegisterUserList', () => {
   it.each([
     ['name', ' ', 'blank'],
     ['contactNumber', ' ', 'blank'],
-    ['name', 'a'.repeat(151), 'maxlength'],
     ['contactNumber', '0'.repeat(31), 'maxlength'],
-    ['email', `${'a'.repeat(250)}@x.com`, 'maxlength'],
     ['password', 'short', 'minlength'],
     ['password', 'password123', 'uppercase'],
     ['password', 'PASSWORD123', 'lowercase'],
@@ -109,6 +128,29 @@ describe('RegisterUserList', () => {
     component.registerUser();
     expect(form.get(field)?.hasError(error)).toBe(true);
     http.expectNone(AUTH_API_URLS.register);
+  });
+
+  it('leaves the name length limit to the API and displays its response', () => {
+    const name = 'a'.repeat(151);
+    form.get('name')?.setValue(name);
+    component.registerUser();
+    const request = http.expectOne(AUTH_API_URLS.register);
+    expect(request.request.body.name).toBe(name);
+    request.flush(
+      { errors: { Name: ['Name must contain no more than 150 characters.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-name-error').textContent).toContain(
+      '150 characters',
+    );
+    expect(form.get('name')?.value).toBe(name);
+  });
+
+  it('keeps email format validation without a separate maximum-length rule', () => {
+    form.get('email')?.setValue(`${'a'.repeat(250)}@x.com`);
+    expect(form.get('email')?.hasError('maxlength')).toBe(false);
+    expect(form.get('email')?.hasError('email')).toBe(true);
   });
 
   it.each([

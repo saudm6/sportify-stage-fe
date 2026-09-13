@@ -1,9 +1,10 @@
 @if (vm$ | async; as vm) {
-<app-register-user-page
-  [userForm]="userForm"
-  [isSubmitting]="vm.isSubmitting"
-  [errorMessage]="vm.errorMessage"
-  (submitted)="registerUser()"
-  (cancelled)="cancel()"
-/>
+  <app-register-user-page
+    [userForm]="userForm"
+    [isSubmitting]="vm.isSubmitting"
+    [errorMessage]="vm.errorMessage"
+    [fieldErrors]="fieldErrors()"
+    (submitted)="registerUser()"
+    (cancelled)="cancel()"
+  />
 }

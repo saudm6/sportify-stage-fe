@@ -1,13 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LOGIN_URL } from '../../../../../core/urls';
 import { RegisterUserPage } from '../../components/register-user-page/register-user-page';
 import { AuthApiService } from '../../service/auth-api.service';
 import { rxState, RxState } from '@rx-angular/state';
-import { finalize, Observable } from 'rxjs';
+import { finalize, merge, Observable } from 'rxjs';
 import { contains } from '../../../../functions/index';
 import { AsyncPipe } from '@angular/common';
 
@@ -37,9 +37,9 @@ export class RegisterUserList {
 
   readonly userForm = this.formBuilder.nonNullable.group(
     {
-      name: ['', [Validators.required, Validators.maxLength(150), contains(/\S/, 'blank')]],
+      name: ['', [Validators.required, contains(/\S/, 'blank')]],
       contactNumber: ['', [Validators.required, Validators.maxLength(30), contains(/\S/, 'blank')]],
-      email: ['', [Validators.email, Validators.required, Validators.maxLength(255)]],
+      email: ['', [Validators.email, Validators.required]],
       password: [
         '',
         [
@@ -59,6 +59,23 @@ export class RegisterUserList {
           : { passwordMismatch: true },
     },
   );
+
+  private readonly formEvents = toSignal(
+    merge(
+      this.userForm.events,
+      ...Object.values(this.userForm.controls).map((control) => control.events),
+    ),
+  );
+  readonly fieldErrors = computed(() => {
+    this.formEvents();
+    return {
+      name: this.fieldError('name', 'Name'),
+      contactNumber: this.fieldError('contactNumber', 'Contact number'),
+      email: this.fieldError('email', 'Email address'),
+      password: this.fieldError('password', 'Password'),
+      confirmPassword: this.fieldError('confirmPassword', 'Password confirmation'),
+    };
+  });
 
   constructor() {
     this.state.set({
@@ -98,6 +115,25 @@ export class RegisterUserList {
         },
         error: (error: unknown) => this.showRegistrationError(error),
       });
+  }
+
+  private fieldError(field: string, label: string): string {
+    const control = this.userForm.get(field);
+    if (!control?.touched) return '';
+    if (control.hasError('server')) return control.getError('server');
+    if (control.hasError('required') || control.hasError('blank')) return `${label} is required.`;
+    if (control.hasError('email')) return 'Enter a valid email address.';
+    if (control.hasError('maxlength'))
+      return `${label} must contain no more than ${control.getError('maxlength').requiredLength} characters.`;
+    if (control.hasError('minlength')) return 'Password must contain at least 8 characters.';
+    if (control.hasError('uppercase'))
+      return 'Password must contain at least one uppercase letter.';
+    if (control.hasError('lowercase'))
+      return 'Password must contain at least one lowercase letter.';
+    if (control.hasError('number')) return 'Password must contain at least one number.';
+    return field === 'confirmPassword' && this.userForm.hasError('passwordMismatch')
+      ? 'Passwords do not match.'
+      : '';
   }
 
   private showRegistrationError(error: unknown): void {
