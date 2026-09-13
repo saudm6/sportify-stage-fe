@@ -1,26 +1,45 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
+import { provideRouter } from '@angular/router';
 import { RegisterUserPage } from './register-user-page';
 
 describe('RegisterUserPage', () => {
   let fixture: ComponentFixture<RegisterUserPage>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [RegisterUserPage] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [RegisterUserPage],
+      providers: [provideRouter([])],
+    }).compileComponents();
     fixture = TestBed.createComponent(RegisterUserPage);
     fixture.componentRef.setInput(
       'userForm',
       new FormGroup({
-        fullName: new FormControl(''),
+        name: new FormControl(''),
+        contactNumber: new FormControl(''),
         email: new FormControl(''),
         password: new FormControl(''),
+        confirmPassword: new FormControl(''),
       }),
     );
     fixture.detectChanges();
   });
 
-  it('renders the preserved registration fields', () => {
-    expect(fixture.nativeElement.querySelectorAll('input')).toHaveLength(3);
-    expect(fixture.nativeElement.textContent).toContain('Register user');
+  it('renders five labeled fields with autocomplete and a Login link', () => {
+    const inputs = [...fixture.nativeElement.querySelectorAll('input')];
+    expect(inputs).toHaveLength(5);
+    for (const input of inputs) {
+      expect(fixture.nativeElement.querySelector(`label[for="${input.id}"]`)).not.toBeNull();
+      expect(input.autocomplete).toBeTruthy();
+    }
+    expect(fixture.nativeElement.querySelector('#register-contactNumber').type).toBe('tel');
+    expect(fixture.nativeElement.querySelector('#register-password').autocomplete).toBe(
+      'new-password',
+    );
+    expect(fixture.nativeElement.querySelector('#register-confirmPassword').autocomplete).toBe(
+      'new-password',
+    );
+    expect(fixture.nativeElement.querySelector('.back-button').getAttribute('href')).toBe('/login');
+    expect(fixture.nativeElement.textContent).toContain('Create account');
   });
 });

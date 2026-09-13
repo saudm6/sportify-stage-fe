@@ -34,7 +34,21 @@ describe('LoginUserPage', () => {
 
   it('links registration to the public route', () => {
     const link = fixture.nativeElement.querySelector('.register-button') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/users/register');
+    expect(link.getAttribute('href')).toBe('/register');
+  });
+
+  it('shows registration success only when supplied', () => {
+    expect(fixture.nativeElement.querySelector('.success-message')).toBeNull();
+
+    fixture.componentRef.setInput(
+      'successMessage',
+      'Account created successfully. Sign in with your email and password.',
+    );
+    fixture.detectChanges();
+
+    const message = fixture.nativeElement.querySelector('.success-message');
+    expect(message.textContent).toContain('Account created successfully.');
+    expect(message.getAttribute('role')).toBe('status');
   });
 
   it('associates visible validation errors with their inputs', () => {

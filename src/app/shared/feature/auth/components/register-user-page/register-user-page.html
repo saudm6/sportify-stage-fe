@@ -1,132 +1,135 @@
 <main class="register-page">
   <div class="page-container">
-    <button class="back-button" type="button" [disabled]="isSubmitting()" (click)="cancelled.emit()">
+    <a class="back-button" [routerLink]="['/', paths.login]">
       <span aria-hidden="true">←</span>
-      Back To Login
-    </button>
-
+      Back to Login
+    </a>
     <section class="register-card">
       <header class="card-header">
         <div>
-          <h1 class="page-title">Register user</h1>
-          <p class="page-description">
-            Enter the personal information and account details for the new user.
-          </p>
+          <h1 class="page-title">Create account</h1>
+          <p class="page-description">Create your customer account.</p>
         </div>
       </header>
-
       @if (errorMessage()) {
-      <div class="error-banner" role="alert">
-        {{ errorMessage() }}
-      </div>
+        <div class="error-banner" role="alert">{{ errorMessage() }}</div>
       }
-
-      <form class="user-form" [formGroup]="userForm()" (ngSubmit)="submitted.emit()">
+      <form
+        class="user-form"
+        [formGroup]="userForm()"
+        [attr.aria-busy]="isSubmitting()"
+        (ngSubmit)="submitted.emit()"
+      >
         <div class="form-content">
           <div class="form-grid">
-            <label class="form-field">
-              <span class="field-label">Full name</span>
-
-              <input type="text" formControlName="fullName" placeholder="Enter full name" autocomplete="name" />
-
-              @if (
-              userForm().get('fullName')?.touched &&
-              userForm().get('fullName')?.hasError('required')
-              ) {
-              <span class="field-error">
-                Full name is required.
-              </span>
+            @let nameError = fieldError('name', 'Name');
+            <div class="form-field">
+              <label class="field-label" for="register-name">Name</label>
+              <input
+                id="register-name"
+                type="text"
+                formControlName="name"
+                placeholder="Enter your name"
+                autocomplete="name"
+                [readOnly]="isSubmitting()"
+                [attr.aria-invalid]="!!nameError"
+                [attr.aria-describedby]="nameError ? 'register-name-error' : null"
+              />
+              @if (nameError) {
+                <span id="register-name-error" class="field-error">{{ nameError }}</span>
               }
-            </label>
-
-            <label class="form-field">
-              <span class="field-label">Email address</span>
-              <input type="email" formControlName="email" placeholder="name@example.com" />
-
-              @if (
-              userForm().get('email')?.touched &&
-              userForm().get('email')?.hasError('required')
-              ) {
-              <span class="field-error">
-                Email address is required.
-              </span>
+            </div>
+            @let contactError = fieldError('contactNumber', 'Contact number');
+            <div class="form-field">
+              <label class="field-label" for="register-contactNumber">Contact number</label>
+              <input
+                id="register-contactNumber"
+                type="tel"
+                formControlName="contactNumber"
+                placeholder="Enter your contact number"
+                autocomplete="tel"
+                [readOnly]="isSubmitting()"
+                [attr.aria-invalid]="!!contactError"
+                [attr.aria-describedby]="contactError ? 'register-contactNumber-error' : null"
+              />
+              @if (contactError) {
+                <span id="register-contactNumber-error" class="field-error">{{
+                  contactError
+                }}</span>
               }
-
-              @if (
-              userForm().get('email')?.touched &&
-              userForm().get('email')?.hasError('email')
-              ) {
-              <span class="field-error">
-                Enter a valid email address.
-              </span>
+            </div>
+            @let emailError = fieldError('email', 'Email address');
+            <div class="form-field form-field-wide">
+              <label class="field-label" for="register-email">Email address</label>
+              <input
+                id="register-email"
+                type="email"
+                formControlName="email"
+                placeholder="name@example.com"
+                autocomplete="email"
+                [readOnly]="isSubmitting()"
+                [attr.aria-invalid]="!!emailError"
+                [attr.aria-describedby]="emailError ? 'register-email-error' : null"
+              />
+              @if (emailError) {
+                <span id="register-email-error" class="field-error">{{ emailError }}</span>
               }
-            </label>
-
-            <label class="form-field form-field-wide">
-              <span class="field-label">Password</span>
-
-              <input type="password" formControlName="password" placeholder="Enter password"
-                autocomplete="new-password" />
-
-              @if (
-              userForm().get('password')?.touched &&
-              userForm().get('password')?.hasError('required')
-              ) {
-              <span class="field-error">
-                Password is required.
-              </span>
+            </div>
+            @let passwordError = fieldError('password', 'Password');
+            <div class="form-field">
+              <label class="field-label" for="register-password">Password</label>
+              <input
+                id="register-password"
+                type="password"
+                formControlName="password"
+                placeholder="Enter password"
+                autocomplete="new-password"
+                [readOnly]="isSubmitting()"
+                [attr.aria-invalid]="!!passwordError"
+                [attr.aria-describedby]="passwordError ? 'register-password-error' : null"
+              />
+              @if (passwordError) {
+                <span id="register-password-error" class="field-error">{{ passwordError }}</span>
               }
-
-              @if (
-              userForm().get('password')?.touched &&
-              userForm().get('password')?.hasError('minlength')
-              ) {
-              <span class="field-error">
-                Password must contain at least 8 characters.
-              </span>
+            </div>
+            @let confirmationError = fieldError('confirmPassword', 'Password confirmation');
+            <div class="form-field">
+              <label class="field-label" for="register-confirmPassword">Confirm password</label>
+              <input
+                id="register-confirmPassword"
+                type="password"
+                formControlName="confirmPassword"
+                placeholder="Enter password again"
+                autocomplete="new-password"
+                [readOnly]="isSubmitting()"
+                [attr.aria-invalid]="!!confirmationError"
+                [attr.aria-describedby]="
+                  confirmationError ? 'register-confirmPassword-error' : null
+                "
+              />
+              @if (confirmationError) {
+                <span id="register-confirmPassword-error" class="field-error">{{
+                  confirmationError
+                }}</span>
               }
-
-              @if (
-              userForm().get('password')?.touched &&
-              userForm().get('password')?.hasError('uppercase')
-              ) {
-              <span class="field-error">
-                Password must contain at least one uppercase letter.
-              </span>
-              }
-
-              @if (
-              userForm().get('password')?.touched &&
-              userForm().get('password')?.hasError('lowercase')
-              ) {
-              <span class="field-error">
-                Password must contain at least one lowercase letter.
-              </span>
-              }
-
-              @if (
-              userForm().get('password')?.touched &&
-              userForm().get('password')?.hasError('number')
-              ) {
-              <span class="field-error">
-                Password must contain at least one number.
-              </span>
-              }
-            </label>
+            </div>
           </div>
         </div>
-
         <footer class="form-actions">
-          <button class="button button-secondary" type="button" [disabled]="isSubmitting()" (click)="cancelled.emit()">
+          <button
+            class="button button-secondary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="cancelled.emit()"
+          >
             Cancel
           </button>
-
           <button class="button button-primary" type="submit" [disabled]="isSubmitting()">
             @if (isSubmitting()) {
-            <span class="button-spinner" aria-hidden="true"></span>
-            Registering...
+              <span class="button-spinner" aria-hidden="true"></span>
+              Creating account...
             } @else {
-            Register user
+              Create account
             }
           </button>
         </footer>

@@ -1,5 +1,7 @@
 export interface RegisterUserRequest {
-  fullName: string;
+  contactNumber: string;
+  name: string;
   email: string;
   password: string;
+  roleId: number;
 }

@@ -5,7 +5,7 @@ export const PAGE_PATHS = {
   orders: 'order',
   orderLineItems: 'order-line-item',
   users: 'users',
-  register: 'users/register',
+  register: 'register',
   staff: 'staff',
   dashboard: 'dashboard',
 };

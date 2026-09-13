@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LoginUserPage } from '../../components/login-user-page/login-user-page';
 import { AuthService } from '../../../../../core/auth.service';
 import { LOGIN_URL } from '../../../../../core/urls';
@@ -35,6 +35,10 @@ export class LoginUserList {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  readonly registrationMessage =
+    inject(ActivatedRoute).snapshot.queryParamMap.get('registered') === '1'
+      ? 'Account created successfully. Sign in with your email and password.'
+      : '';
 
   readonly userForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
