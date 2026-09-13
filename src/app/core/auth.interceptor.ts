@@ -8,10 +8,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const url = new URL(req.url, window.location.origin);
   const requestUrl = url.origin + url.pathname.replace(/\/$/, '');
-  const isProtectedApi = requestUrl.startsWith(`${API_BASE_URL}/`)
+  const isNonAuthApi = requestUrl.startsWith(`${API_BASE_URL}/`)
     && !Object.values(AUTH_API_URLS).includes(requestUrl);
   const token = auth.getToken();
-  if (!isProtectedApi || !token) return next(req);
+  if (!isNonAuthApi || !token) return next(req);
 
   return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })).pipe(
     catchError(error => {

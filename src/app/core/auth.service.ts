@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, NgZone, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { Router, UrlTree } from '@angular/router';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
 import { LOGIN_URL, PAGE_PATHS } from './urls';
@@ -15,7 +15,6 @@ interface Session {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly router = inject(Router);
-  private readonly zone = inject(NgZone);
   private readonly currentSession = signal<Session | null>(null);
   readonly session = this.currentSession.asReadonly();
   private expiryTimer?: ReturnType<typeof setTimeout>;
@@ -31,7 +30,7 @@ export class AuthService {
     if (!session || !session.roles.some(role => supportedRoles.includes(role))) {
       const hadSession = this.session() !== null;
       this.clearSession();
-      if (hadSession) void this.zone.run(() => this.router.navigateByUrl(LOGIN_URL));
+      if (hadSession) void this.router.navigateByUrl(LOGIN_URL);
       return null;
     }
     if (this.session()?.token !== token) this.setSession(session);
@@ -88,11 +87,9 @@ export class AuthService {
   private setSession(session: Session): void {
     clearTimeout(this.expiryTimer);
     this.currentSession.set(session);
-    this.zone.runOutsideAngular(() => {
-      this.expiryTimer = setTimeout(() => {
-        if (this.getToken()) this.setSession(this.session()!);
-      }, Math.min(session.expiresAt - Date.now(), 2_147_483_647));
-    });
+    this.expiryTimer = setTimeout(() => {
+      if (this.getToken()) this.setSession(this.session()!);
+    }, Math.min(session.expiresAt - Date.now(), 2_147_483_647));
   }
 
   private clearSession(): void {
