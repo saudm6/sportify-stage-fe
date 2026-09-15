@@ -2,9 +2,10 @@
 <nav class="main-navbar" aria-label="Account navigation">
   <div class="navbar-container">
     <div class="navbar-links">
-      @if (inStaff() && session.roles.includes('ADMIN')) {
+      @if (session.roles.includes('ADMIN') || session.roles.includes('FINANCE') || session.roles.includes('SUPERVISOR')) {
         <a class="navbar-link" [routerLink]="['/', paths.staff, paths.dashboard]" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
-      } @else if (session.roles.includes('USER')) {
+      }
+      @if (!inStaff() && session.roles.includes('USER')) {
         <a class="navbar-link" [routerLink]="['/' + paths.products]" routerLinkActive="active" ariaCurrentWhenActive="page">Products</a>
         <a class="navbar-link" [routerLink]="['/' + paths.users]" routerLinkActive="active" ariaCurrentWhenActive="page">Users</a>
         <a class="navbar-link" [routerLink]="['/' + paths.orderLineItems]" routerLinkActive="active" ariaCurrentWhenActive="page">Order Line Items</a>
@@ -15,7 +16,14 @@
           {{ inStaff() ? 'Switch to legacy area' : 'Switch to staff area' }}
         </a>
       }
-      <button class="navbar-link" type="button" (click)="auth.logout()">Sign out</button>
+      <details class="profile-menu" #profileMenu>
+        <summary class="navbar-link">Profile</summary>
+        <div class="profile-menu-links">
+          <a class="navbar-link" [routerLink]="['/' + paths.account]" routerLinkActive="active"
+             ariaCurrentWhenActive="page" (click)="profileMenu.open = false">My Account</a>
+          <button class="navbar-link" type="button" (click)="auth.logout()">Sign out</button>
+        </div>
+      </details>
     </div>
   </div>
 </nav>

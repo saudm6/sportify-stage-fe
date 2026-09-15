@@ -1,5 +1,6 @@
 export const PAGE_PATHS = {
   login: 'login',
+  account: 'account',
   products: 'product',
   addProduct: 'product/add',
   orders: 'order',
