@@ -200,4 +200,3 @@ describe('Account route and session', () => {
     TestBed.inject(HttpTestingController).expectNone(url);
   });
 });
-
