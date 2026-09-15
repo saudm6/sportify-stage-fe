@@ -1,0 +1,68 @@
+<main class="account-page" [attr.aria-busy]="loading() || saving()">
+  <section class="account-card" aria-labelledby="account-title">
+    <header>
+      <h1 id="account-title">My Account</h1>
+      <p>View and update your personal details.</p>
+    </header>
+    @if (loading()) {
+      <p role="status">Loading your account…</p>
+    }
+    @if (error()) {
+      <p class="error-message" role="alert">{{ error() }}</p>
+      @if (!profile() && !loading() && !unavailable()) {
+        <button type="button" (click)="retried.emit()">Retry</button>
+      }
+    }
+    @if (success()) {
+      <p class="success-message" role="status">{{ success() }}</p>
+    }
+    @if (profile(); as account) {
+      <form [formGroup]="form()" (ngSubmit)="submitted.emit()" novalidate>
+        <div class="field">
+          <label for="account-name">Name</label>
+          <input id="account-name" type="text" autocomplete="name" formControlName="name"
+            maxlength="150" [readOnly]="saving() || unavailable()"
+            [attr.aria-invalid]="!!fieldErrors()['name']"
+            [attr.aria-describedby]="fieldErrors()['name'] ? 'account-name-error' : null" />
+          @if (fieldErrors()['name']) {
+            <span id="account-name-error" class="field-error">{{ fieldErrors()['name'] }}</span>
+          }
+        </div>
+        <div class="field">
+          <label for="account-email">Email address</label>
+          <input id="account-email" type="email" autocomplete="email" formControlName="email"
+            maxlength="255" [readOnly]="saving() || unavailable()"
+            [attr.aria-invalid]="!!fieldErrors()['email']"
+            [attr.aria-describedby]="fieldErrors()['email'] ? 'account-email-error' : null" />
+          @if (fieldErrors()['email']) {
+            <span id="account-email-error" class="field-error">{{ fieldErrors()['email'] }}</span>
+          }
+        </div>
+        <div class="field">
+          <label for="account-contact">Contact number</label>
+          <input id="account-contact" type="tel" autocomplete="tel" formControlName="contactNumber"
+            maxlength="30" [readOnly]="saving() || unavailable()"
+            [attr.aria-invalid]="!!fieldErrors()['contactNumber']"
+            [attr.aria-describedby]="fieldErrors()['contactNumber'] ? 'account-contact-error' : null" />
+          @if (fieldErrors()['contactNumber']) {
+            <span id="account-contact-error" class="field-error">{{ fieldErrors()['contactNumber'] }}</span>
+          }
+        </div>
+        <section class="roles" aria-labelledby="account-roles">
+          <h2 id="account-roles">Roles</h2>
+          @for (role of account.roles; track $index) {
+            <p>{{ role.roleName }} — {{ role.isActive ? 'Active' : 'Inactive' }}</p>
+          } @empty {
+            <p>No roles assigned.</p>
+          }
+        </section>
+        <footer>
+          <button type="button" [disabled]="loading() || saving()" (click)="cancelled.emit()">Cancel</button>
+          <button class="primary" type="submit" [disabled]="loading() || saving() || unavailable()">
+            {{ saving() ? 'Saving…' : 'Save' }}
+          </button>
+        </footer>
+      </form>
+    }
+  </section>
+</main>
