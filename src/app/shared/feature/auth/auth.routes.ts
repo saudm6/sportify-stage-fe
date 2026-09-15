@@ -12,4 +12,5 @@ export const authRoutes: Routes = [
     loadComponent: () =>
       import('./containers/register-user-list/register-user-list').then((m) => m.RegisterUserList),
   },
+  { path: 'users/register', redirectTo: PAGE_PATHS.register, pathMatch: 'full' },
 ];

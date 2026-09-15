@@ -7,7 +7,7 @@ export const staffRoutes: Routes = [
     path: '',
     canActivate: [roleGuard],
     canActivateChild: [roleGuard],
-    data: { allowedRoles: ['ADMIN'] },
+    data: { allowedRoles: ['ADMIN', 'FINANCE', 'SUPERVISOR'] },
     loadComponent: () => import('../../layouts/staff/staff-layout').then(m => m.StaffLayout),
     children: [
       { path: '', redirectTo: PAGE_PATHS.dashboard, pathMatch: 'full' },

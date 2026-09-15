@@ -1,6 +1,7 @@
 export interface RegistrationResponse {
-  id: string;
-  fullName: string;
+  publicId: string;
+  name: string;
+  contactNumber: string;
   email: string;
-  createdAt: string;
+  roles: { roleId: number; roleName: string; isActive: boolean }[];
 }

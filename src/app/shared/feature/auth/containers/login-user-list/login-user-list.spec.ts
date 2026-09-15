@@ -28,7 +28,9 @@ describe('LoginUserList', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { queryParamMap: convertToParamMap({ returnUrl: '/order' }) },
+            snapshot: {
+              queryParamMap: convertToParamMap({ returnUrl: '/order' }),
+            },
           },
         },
       ],

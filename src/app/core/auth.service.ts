@@ -4,7 +4,8 @@ import { jwtDecode, JwtPayload } from 'jwt-decode';
 import { LOGIN_URL, PAGE_PATHS } from './urls';
 
 const roleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-const supportedRoles = ['ADMIN', 'USER'];
+const staffRoles = ['ADMIN', 'FINANCE', 'SUPERVISOR'];
+const supportedRoles = ['USER', ...staffRoles];
 
 interface Session {
   token: string;
@@ -58,7 +59,7 @@ export class AuthService {
 
   destination(): UrlTree {
     if (!this.getToken()) return this.router.parseUrl(LOGIN_URL);
-    return this.router.createUrlTree(this.session()?.roles.includes('ADMIN')
+    return this.router.createUrlTree(this.session()?.roles.some(role => staffRoles.includes(role))
       ? ['/', PAGE_PATHS.staff, PAGE_PATHS.dashboard]
       : [`/${PAGE_PATHS.products}`]);
   }

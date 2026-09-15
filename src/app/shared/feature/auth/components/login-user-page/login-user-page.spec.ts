@@ -34,7 +34,7 @@ describe('LoginUserPage', () => {
 
   it('links registration to the public route', () => {
     const link = fixture.nativeElement.querySelector('.register-button') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/users/register');
+    expect(link.getAttribute('href')).toBe('/register');
   });
 
   it('associates visible validation errors with their inputs', () => {

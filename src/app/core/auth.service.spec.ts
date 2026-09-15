@@ -23,6 +23,15 @@ describe('Session and role home pages', () => {
     vi.useRealTimers();
   });
 
+  it.each(['FINANCE', 'SUPERVISOR'])('accepts and restores %s at the staff dashboard', role => {
+    localStorage.setItem('authToken', token(role));
+    auth = TestBed.inject(AuthService);
+    expect(auth.session()?.roles).toEqual([role]);
+    expect(router.serializeUrl(auth.destination())).toBe('/staff/dashboard');
+    expect(auth.acceptLogin({ hasAuthority: true, token: token(role) })).toBeNull();
+    expect(router.serializeUrl(auth.destination())).toBe('/staff/dashboard');
+  });
+
   it('restores supported roles from the token on refresh', () => {
     localStorage.setItem('authToken', token(['ADMIN', 'USER']));
     auth = TestBed.inject(AuthService);

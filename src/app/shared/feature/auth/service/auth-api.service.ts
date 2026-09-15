@@ -6,6 +6,7 @@ import { LoginUserRequest } from '../models/login-user-request';
 import { LoginUserResponse } from '../models/login-user-response';
 import { RegisterUserRequest } from '../models/register-user-request';
 import { RegistrationResponse } from '../models/registration-response';
+import { RegistrationOptions } from '../models/registration-options';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
@@ -15,7 +16,19 @@ export class AuthApiService {
     return this.httpClient.post<LoginUserResponse>(AUTH_API_URLS.login, request);
   }
 
+  getRegistrationOptions(): Observable<RegistrationOptions> {
+    return this.httpClient.get<RegistrationOptions>(AUTH_API_URLS.registrationOptions);
+  }
+
   registerUser(request: RegisterUserRequest): Observable<RegistrationResponse> {
-    return this.httpClient.post<RegistrationResponse>(AUTH_API_URLS.register, request);
+    const { contactNumber, name, email, password, rolePublicId, companyPublicId } = request;
+    return this.httpClient.post<RegistrationResponse>(AUTH_API_URLS.register, {
+      contactNumber,
+      name,
+      email,
+      password,
+      rolePublicId,
+      companyPublicId,
+    });
   }
 }

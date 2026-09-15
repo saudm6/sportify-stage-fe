@@ -1,17 +1,24 @@
-import { Component, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LOGIN_URL } from '../../../../../core/urls';
 import { RegisterUserPage } from '../../components/register-user-page/register-user-page';
 import { AuthApiService } from '../../service/auth-api.service';
 import { rxState, RxState } from '@rx-angular/state';
-import { finalize, Observable } from 'rxjs';
-import { contains } from '../../../../functions/index';
+import { finalize, merge, Observable } from 'rxjs';
+import { contains, notBlank } from '../../../../functions/index';
 import { AsyncPipe } from '@angular/common';
+import { RegistrationOptions } from '../../models/registration-options';
 
 interface RegisterUserState {
   isSubmitting: boolean;
   errorMessage: string;
+  options: RegistrationOptions;
+  optionsLoading: boolean;
+  optionsError: string;
+  requiresCompany: boolean;
 }
 
 type ViewModel = RegisterUserState;
@@ -24,7 +31,6 @@ type ViewModel = RegisterUserState;
   styleUrl: './register-user-list.css',
 })
 export class RegisterUserList {
-
   private readonly state = rxState<RegisterUserState>();
 
   vm$: Observable<ViewModel>;
@@ -32,37 +38,82 @@ export class RegisterUserList {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthApiService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly userForm = this.formBuilder.nonNullable.group({
-    fullName: ['', Validators.required],
-    email: ['', [Validators.email, Validators.required]],
-    password: [
-      '',
-      [
-        Validators.minLength(8),
-        Validators.required,
-        contains(/[A-Z]/, 'uppercase'),
-        contains(/[a-z]/, 'lowercase'),
-        contains(/[0-9]/, 'number'),
+  readonly userForm = this.formBuilder.nonNullable.group(
+    {
+      name: ['', [Validators.required, notBlank]],
+      contactNumber: ['', [Validators.required, Validators.maxLength(30), notBlank]],
+      email: ['', [Validators.email, Validators.required]],
+      password: [
+        '',
+        [
+          Validators.minLength(8),
+          Validators.required,
+          contains(/[A-Z]/, 'uppercase'),
+          contains(/[a-z]/, 'lowercase'),
+          contains(/[0-9]/, 'number'),
+        ],
       ],
-    ],
+      confirmPassword: ['', Validators.required],
+      rolePublicId: ['', Validators.required],
+      companyPublicId: this.formBuilder.control<string | null>(null),
+    },
+    {
+      validators: (form) =>
+        form.get('password')?.value === form.get('confirmPassword')?.value
+          ? null
+          : { passwordMismatch: true },
+    },
+  );
+
+  private readonly formEvents = toSignal(
+    merge(
+      this.userForm.events,
+      ...Object.values(this.userForm.controls).map((control) => control.events),
+    ),
+  );
+  readonly fieldErrors = computed(() => {
+    this.formEvents();
+    return {
+      rolePublicId: this.fieldError('rolePublicId', 'Role'),
+      companyPublicId: this.fieldError('companyPublicId', 'Company'),
+      name: this.fieldError('name', 'Name'),
+      contactNumber: this.fieldError('contactNumber', 'Contact number'),
+      email: this.fieldError('email', 'Email address'),
+      password: this.fieldError('password', 'Password'),
+      confirmPassword: this.fieldError('confirmPassword', 'Password confirmation'),
+    };
   });
 
   constructor() {
-    this.state.set({ 
+    this.state.set({
       isSubmitting: false,
       errorMessage: '',
+      options: { roles: [], companies: [] },
+      optionsLoading: false,
+      optionsError: '',
+      requiresCompany: false,
     });
+    this.userForm.controls.rolePublicId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateCompanyRequirement());
+    this.loadRegistrationOptions();
 
     this.vm$ = this.state.select();
   }
 
   registerUser(): void {
-    if (this.userForm.invalid) {
-      this.userForm.markAllAsTouched();
+    if (
+      this.state.get('isSubmitting') ||
+      this.state.get('optionsLoading') ||
+      this.state.get('optionsError') ||
+      !this.state.get('options').roles.length
+    ) {
       return;
     }
-    if (this.state.get('isSubmitting')) {
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
       return;
     }
 
@@ -71,30 +122,156 @@ export class RegisterUserList {
       errorMessage: '',
     });
 
+    const { name, contactNumber, email, password, rolePublicId, companyPublicId } =
+      this.userForm.getRawValue();
     this.authService
-      .registerUser(this.userForm.getRawValue())
+      .registerUser({
+        name: name.trim(),
+        contactNumber: contactNumber.trim(),
+        email,
+        password,
+        rolePublicId,
+        companyPublicId,
+      })
       .pipe(
+        takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.state.set({ isSubmitting: false });
         }),
       )
       .subscribe({
         next: () => {
-          this.router.navigate([LOGIN_URL]);
+          void this.router.navigate([LOGIN_URL]);
         },
-        error: (error) => {
-          
-          const validationErrors = error.error?.errors;
-
-          console.error('Unable to register user: ', error);
-          
-          const messages = validationErrors ? Object.values(validationErrors).flat() : [];
-
-          this.state.set({
-            errorMessage: messages.join(' ') || 'Unable to register user',
-          });
-        },
+        error: (error: unknown) => this.showRegistrationError(error),
       });
+  }
+
+  loadRegistrationOptions(): void {
+    if (this.state.get('optionsLoading')) return;
+    this.state.set({ optionsLoading: true, optionsError: '' });
+    this.authService
+      .getRegistrationOptions()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.state.set({ optionsLoading: false })),
+      )
+      .subscribe({
+        next: (options) => {
+          this.state.set({ options });
+          this.updateCompanyRequirement();
+        },
+        error: () =>
+          this.state.set({
+            optionsError: 'Unable to load registration options. Please try again.',
+          }),
+      });
+  }
+
+  private updateCompanyRequirement(): void {
+    const requiresCompany =
+      this.state
+        .get('options')
+        .roles.find((role) => role.publicId === this.userForm.controls.rolePublicId.value)
+        ?.requiresCompany === true;
+    this.state.set({ requiresCompany });
+    const company = this.userForm.controls.companyPublicId;
+    if (requiresCompany) company.setValidators(Validators.required);
+    else {
+      company.clearValidators();
+      company.reset(null);
+    }
+    company.updateValueAndValidity();
+  }
+
+  private fieldError(field: string, label: string): string {
+    const control = this.userForm.get(field);
+    if (!control?.touched) return '';
+    if (control.hasError('server')) return control.getError('server');
+    if (control.hasError('required') || control.hasError('blank')) return `${label} is required.`;
+    if (control.hasError('email')) return 'Enter a valid email address.';
+    if (control.hasError('maxlength'))
+      return `${label} must contain no more than ${control.getError('maxlength').requiredLength} characters.`;
+    if (control.hasError('minlength')) return 'Password must contain at least 8 characters.';
+    if (control.hasError('uppercase'))
+      return 'Password must contain at least one uppercase letter.';
+    if (control.hasError('lowercase'))
+      return 'Password must contain at least one lowercase letter.';
+    if (control.hasError('number')) return 'Password must contain at least one number.';
+    return field === 'confirmPassword' && this.userForm.hasError('passwordMismatch')
+      ? 'Passwords do not match.'
+      : '';
+  }
+
+  private showRegistrationError(error: unknown): void {
+    const fallback = 'Unable to create your account. Please try again.';
+    if (!(error instanceof HttpErrorResponse)) {
+      this.state.set({ errorMessage: fallback });
+      return;
+    }
+
+    if (error.status === 400) {
+      const errors: unknown = error.error?.errors;
+      const fields = new Map([
+        ['Name', 'name'],
+        ['ContactNumber', 'contactNumber'],
+        ['Email', 'email'],
+        ['Password', 'password'],
+        ['RolePublicId', 'rolePublicId'],
+        ['CompanyPublicId', 'companyPublicId'],
+      ]);
+      let unrecognized = false;
+      let applied = false;
+      if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
+        for (const [key, messages] of Object.entries(errors)) {
+          const field = fields.get(key);
+          if (
+            field &&
+            Array.isArray(messages) &&
+            messages.length &&
+            messages.every((message) => typeof message === 'string' && message.trim())
+          ) {
+            const control = this.userForm.get(field)!;
+            control.setErrors({ ...control.errors, server: messages.join(' ') });
+            control.markAsTouched();
+            applied = true;
+          } else {
+            unrecognized = true;
+          }
+        }
+      }
+      this.state.set({ errorMessage: applied && !unrecognized ? '' : fallback });
+      return;
+    }
+
+    if (error.status === 409) {
+      const detail: unknown = error.error?.detail;
+      const field =
+        detail === 'A user with this email already exists.'
+          ? 'email'
+          : detail === 'A user with this contact number already exists.'
+            ? 'contactNumber'
+            : null;
+      if (field) {
+        const control = this.userForm.controls[field];
+        control.setErrors({ ...control.errors, server: detail });
+        control.markAsTouched();
+      } else {
+        this.state.set({
+          errorMessage: 'An account with this email or contact number already exists.',
+        });
+      }
+      return;
+    }
+
+    this.state.set({
+      errorMessage:
+        error.status === 403
+          ? 'Registration is unavailable. Please contact support.'
+          : error.status === 0 || error.status >= 500
+            ? 'The server is unavailable. Please try again.'
+            : fallback,
+    });
   }
   cancel(): void {
     if (!this.state.get('isSubmitting')) {
