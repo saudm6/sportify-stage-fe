@@ -193,12 +193,12 @@
 }
 
 .form-field input[aria-invalid="true"],
-.form-field select.ng-invalid.ng-touched {
+.form-field select[aria-invalid="true"] {
   border-color: #d92d20;
 }
 
 .form-field input[aria-invalid="true"]:focus,
-.form-field select.ng-invalid.ng-touched:focus {
+.form-field select[aria-invalid="true"]:focus {
   box-shadow: 0 0 0 4px rgb(217 45 32 / 10%);
 }
 

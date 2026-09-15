@@ -15,4 +15,5 @@ export const API_BASE_URL = 'http://localhost:5210/api';
 export const AUTH_API_URLS = {
   login: `${API_BASE_URL}/account/login`,
   register: `${API_BASE_URL}/account/register`,
+  registrationOptions: `${API_BASE_URL}/account/registration-options`,
 };

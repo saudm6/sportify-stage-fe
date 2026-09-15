@@ -17,7 +17,7 @@ describe('Role guard', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([
       { path: 'login', component: Page },
       { path: 'product', component: Page, canActivate: [roleGuard], data: { allowedRoles: ['USER'] } },
-      { path: 'staff', canActivate: [roleGuard], canActivateChild: [roleGuard], data: { allowedRoles: ['ADMIN'] }, children: [
+      { path: 'staff', canActivate: [roleGuard], canActivateChild: [roleGuard], data: { allowedRoles: ['ADMIN', 'FINANCE', 'SUPERVISOR'] }, children: [
         { path: 'dashboard', component: Page },
         { path: 'restricted', component: Page, data: { allowedRoles: ['USER'] } },
       ] },
@@ -43,6 +43,15 @@ describe('Role guard', () => {
       expect(router.url).toBe('/login');
       expect(localStorage.getItem('authToken')).toBeNull();
     }
+  });
+
+  it.each(['FINANCE', 'SUPERVISOR'])('permits %s through staff area and child guards', async role => {
+    localStorage.setItem('authToken', token(role));
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/staff/dashboard');
+    expect(TestBed.inject(Router).url).toBe('/staff/dashboard');
+    await harness.navigateByUrl('/product');
+    expect(TestBed.inject(Router).url).toBe('/staff/dashboard');
   });
 
   it('enforces area and child roles, then rechecks after logout', async () => {

@@ -3,5 +3,6 @@ export interface RegisterUserRequest {
   name: string;
   email: string;
   password: string;
-  roleId: number;
+  rolePublicId: string;
+  companyPublicId: string | null;
 }

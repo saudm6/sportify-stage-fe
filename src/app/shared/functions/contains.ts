@@ -13,3 +13,5 @@ export function contains(pattern: RegExp, errorKey: string): ValidatorFn {
       : { [errorKey]: true };
   };
 }
+
+export const notBlank = contains(/\S/, 'blank');

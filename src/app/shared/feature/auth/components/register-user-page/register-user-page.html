@@ -8,11 +8,22 @@
       <header class="card-header">
         <div>
           <h1 class="page-title">Create account</h1>
-          <p class="page-description">Create your customer account.</p>
+          <p class="page-description">Create your account.</p>
         </div>
       </header>
       @if (errorMessage()) {
         <div class="error-banner" role="alert">{{ errorMessage() }}</div>
+      }
+      @if (optionsLoading()) {
+        <p class="error-banner" role="status">Loading registration options...</p>
+      }
+      @if (optionsError()) {
+        <div class="error-banner" role="alert">
+          {{ optionsError() }}
+          <button type="button" class="button button-secondary" (click)="optionsRetried.emit()">
+            Retry
+          </button>
+        </div>
       }
       <form
         class="user-form"
@@ -22,6 +33,52 @@
       >
         <div class="form-content">
           <div class="form-grid">
+            @let roleError = fieldErrors()['rolePublicId'];
+            <div class="form-field">
+              <label class="field-label" for="register-rolePublicId">Role</label>
+              <select
+                id="register-rolePublicId"
+                formControlName="rolePublicId"
+                [attr.disabled]="isSubmitting() || optionsLoading() || !!optionsError() ? '' : null"
+                [attr.aria-invalid]="!!roleError"
+                [attr.aria-describedby]="roleError ? 'register-rolePublicId-error' : null"
+              >
+                <option value="">Select a role</option>
+                @for (role of options().roles; track role.publicId) {
+                  <option [value]="role.publicId">{{ role.name }}</option>
+                }
+              </select>
+              @if (roleError) {
+                <span id="register-rolePublicId-error" class="field-error">{{ roleError }}</span>
+              }
+            </div>
+            @if (requiresCompany()) {
+              @let companyError = fieldErrors()['companyPublicId'];
+              <div class="form-field">
+                <label class="field-label" for="register-companyPublicId">Company</label>
+                <select
+                  id="register-companyPublicId"
+                  formControlName="companyPublicId"
+                  [attr.disabled]="
+                    isSubmitting() || optionsLoading() || !!optionsError() ? '' : null
+                  "
+                  [attr.aria-invalid]="!!companyError"
+                  [attr.aria-describedby]="companyError ? 'register-companyPublicId-error' : null"
+                >
+                  <option [ngValue]="null">Select a company</option>
+                  @for (company of options().companies; track company.publicId) {
+                    <option [value]="company.publicId">
+                      {{ company.nameEn || company.nameAr }}
+                    </option>
+                  }
+                </select>
+                @if (companyError) {
+                  <span id="register-companyPublicId-error" class="field-error">{{
+                    companyError
+                  }}</span>
+                }
+              </div>
+            }
             @let nameError = fieldErrors()['name'];
             <div class="form-field">
               <label class="field-label" for="register-name">Name</label>
@@ -124,7 +181,13 @@
           >
             Cancel
           </button>
-          <button class="button button-primary" type="submit" [disabled]="isSubmitting()">
+          <button
+            class="button button-primary"
+            type="submit"
+            [disabled]="
+              isSubmitting() || optionsLoading() || !!optionsError() || !options().roles.length
+            "
+          >
             @if (isSubmitting()) {
               <span class="button-spinner" aria-hidden="true"></span>
               Creating account...

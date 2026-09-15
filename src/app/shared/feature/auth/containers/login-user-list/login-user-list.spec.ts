@@ -29,7 +29,7 @@ describe('LoginUserList', () => {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
-              queryParamMap: convertToParamMap({ returnUrl: '/order', registered: '1' }),
+              queryParamMap: convertToParamMap({ returnUrl: '/order' }),
             },
           },
         },
@@ -43,15 +43,6 @@ describe('LoginUserList', () => {
   });
 
   afterEach(() => http.verify());
-
-  it('exposes the fixed registration success message for the marker', () => {
-    expect(component.registrationMessage).toBe(
-      'Account created successfully. Sign in with your email and password.',
-    );
-    expect(fixture.nativeElement.querySelector('.success-message')?.textContent).toContain(
-      'Account created successfully.',
-    );
-  });
 
   it.each([
     [{ hasAuthority: false, token: null }, 'Invalid email or password.'],

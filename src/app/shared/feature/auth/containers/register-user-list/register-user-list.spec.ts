@@ -15,7 +15,22 @@ describe('RegisterUserList', () => {
   let component: RegisterUserList;
   let http: HttpTestingController;
   let form: FormGroup;
+  const options = {
+    roles: [
+      { publicId: '8eb4661a-d989-4eea-a39c-09e54c624b97', name: 'USER', requiresCompany: false },
+      { publicId: '41562325-11a9-4e49-8654-3bbe340dd14a', name: 'ADMIN', requiresCompany: true },
+    ],
+    companies: [
+      {
+        publicId: 'f21d4c8a-90dd-4dd8-8f66-e46c70812fd0',
+        nameEn: 'Company A',
+        nameAr: 'Company A',
+      },
+    ],
+  };
   const values = {
+    rolePublicId: options.roles[0].publicId,
+    companyPublicId: null,
     name: ' Test Customer ',
     contactNumber: ' +96800123456 ',
     email: 'test@example.com',
@@ -38,8 +53,79 @@ describe('RegisterUserList', () => {
     http = TestBed.inject(HttpTestingController);
     form.patchValue(values);
     fixture.detectChanges();
+    http.expectOne(AUTH_API_URLS.registrationOptions).flush(options);
   });
   afterEach(() => http.verify());
+
+  it('requires role and staff company, then clears company errors for USER', () => {
+    form.get('rolePublicId')!.setValue('');
+    component.registerUser();
+    expect(form.get('rolePublicId')!.hasError('required')).toBe(true);
+    form.get('rolePublicId')!.setValue(options.roles[1].publicId);
+    component.registerUser();
+    fixture.detectChanges();
+    const company = fixture.nativeElement.querySelector('#register-companyPublicId');
+    expect(company.getAttribute('aria-invalid')).toBe('true');
+    expect(fixture.nativeElement.querySelector(`label[for="${company.id}"]`)).not.toBeNull();
+    expect(form.get('companyPublicId')!.hasError('required')).toBe(true);
+    form.get('companyPublicId')!.setValue(options.companies[0].publicId);
+    component.registerUser();
+    const request = http.expectOne(AUTH_API_URLS.register);
+    expect(request.request.body.rolePublicId).toBe(options.roles[1].publicId);
+    expect(request.request.body.companyPublicId).toBe(options.companies[0].publicId);
+    fixture.detectChanges();
+    expect(
+      [...fixture.nativeElement.querySelectorAll('select')].every((select) => select.disabled),
+    ).toBe(true);
+    request.flush(
+      { errors: { CompanyPublicId: ['Invalid company.'] } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    expect(form.get('companyPublicId')!.hasError('server')).toBe(true);
+    form.get('rolePublicId')!.setValue(options.roles[0].publicId);
+    expect(form.get('companyPublicId')!.value).toBeNull();
+    expect(form.get('companyPublicId')!.errors).toBeNull();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#register-companyPublicId')).toBeNull();
+  });
+
+  it('disables registration during options loading and retries without losing fields', () => {
+    component.loadRegistrationOptions();
+    component.registerUser();
+    http.expectNone(AUTH_API_URLS.register);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(true);
+    http.expectOne(AUTH_API_URLS.registrationOptions).error(new ProgressEvent('error'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Unable to load registration options');
+    expect(form.getRawValue()).toEqual(values);
+    const retry = [...fixture.nativeElement.querySelectorAll('button')].find(
+      (button) => button.textContent.trim() === 'Retry',
+    );
+    retry.click();
+    http.expectOne(AUTH_API_URLS.registrationOptions).flush(options);
+    fixture.detectChanges();
+    expect(form.getRawValue()).toEqual(values);
+    expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(false);
+  });
+
+  it('maps role errors while preserving account values', () => {
+    component.registerUser();
+    http
+      .expectOne(AUTH_API_URLS.register)
+      .flush(
+        { errors: { RolePublicId: ['Invalid role.'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+    fixture.detectChanges();
+    expect(form.getRawValue()).toEqual(values);
+    expect(
+      fixture.nativeElement.querySelector('#register-rolePublicId-error').textContent,
+    ).toContain('Invalid role.');
+    expect(
+      fixture.nativeElement.querySelector('#register-rolePublicId').getAttribute('aria-invalid'),
+    ).toBe('true');
+  });
 
   it('updates supplied errors when each field is touched or corrected', () => {
     const name = form.get('name')!;
@@ -72,7 +158,8 @@ describe('RegisterUserList', () => {
       contactNumber: '+96800123456',
       email: values.email,
       password: values.password,
-      roleId: 1,
+      rolePublicId: options.roles[0].publicId,
+      companyPublicId: null,
     });
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(true);
@@ -91,7 +178,7 @@ describe('RegisterUserList', () => {
       { status: 201, statusText: 'Created' },
     );
     await fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/login?registered=1');
+    expect(TestBed.inject(Router).url).toBe('/login');
     expect(localStorage.getItem('authToken')).toBeNull();
   });
 

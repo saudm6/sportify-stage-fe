@@ -23,6 +23,7 @@ describe('authRoutes', () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/register');
     expect(harness.routeNativeElement?.querySelector('app-register-user-page')).not.toBeNull();
+    http.expectOne(AUTH_API_URLS.registrationOptions).flush({ roles: [], companies: [] });
     http.expectNone(AUTH_API_URLS.register);
   });
 
@@ -31,6 +32,7 @@ describe('authRoutes', () => {
     await harness.navigateByUrl('/users/register');
     expect(TestBed.inject(Router).url).toBe('/register');
     expect(harness.routeNativeElement?.querySelector('app-register-user-page')).not.toBeNull();
+    http.expectOne(AUTH_API_URLS.registrationOptions).flush({ roles: [], companies: [] });
     http.expectNone(AUTH_API_URLS.register);
   });
 });

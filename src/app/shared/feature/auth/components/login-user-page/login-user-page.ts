@@ -14,7 +14,6 @@ export class LoginUserPage {
   readonly userForm = input.required<FormGroup>();
   readonly isSubmitting = input(false);
   readonly errorMessage = input('');
-  readonly successMessage = input('');
 
   readonly submitted = output<void>();
   readonly cancelled = output<void>();

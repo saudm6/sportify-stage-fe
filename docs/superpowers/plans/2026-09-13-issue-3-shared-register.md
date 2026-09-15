@@ -1,5 +1,9 @@
 # Shared Customer Registration Implementation Plan
 
+> **Prototype update — 2026-09-15:** The [role/company registration plan](2026-09-15-prototype-role-company-registration.md) supersedes this plan's customer-only scope and hardcoded numeric role mapping. Options now come from the API, staff require a company, and protected backend operations enforce company isolation. The older verification below records the original implementation only.
+
+> **Owner update — 2026-09-15:** Successful registration now redirects directly to `/login`, without a query parameter or success banner. This supersedes the message handoff described below. Name and contact number use the shared `notBlank` validator, which reuses `contains(/\S/, 'blank')`.
+
 > **For agentic workers:** The owner approved implementation on 2026-09-13. Implemented on branch `feat/issue-3-shared-register`; completed steps are checked below.
 
 **Goal:** Complete frontend [issue #3](https://github.com/saudm6/sportify-stage-fe/issues/3): public customer registration, field validation, safe role assignment, and a return to Login with a success message.

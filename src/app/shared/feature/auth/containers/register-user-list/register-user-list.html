@@ -1,6 +1,11 @@
 @if (vm$ | async; as vm) {
   <app-register-user-page
     [userForm]="userForm"
+    [options]="vm.options"
+    [requiresCompany]="vm.requiresCompany"
+    [optionsLoading]="vm.optionsLoading"
+    [optionsError]="vm.optionsError"
+    (optionsRetried)="loadRegistrationOptions()"
     [isSubmitting]="vm.isSubmitting"
     [errorMessage]="vm.errorMessage"
     [fieldErrors]="fieldErrors()"

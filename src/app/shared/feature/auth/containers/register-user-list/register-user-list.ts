@@ -8,12 +8,17 @@ import { RegisterUserPage } from '../../components/register-user-page/register-u
 import { AuthApiService } from '../../service/auth-api.service';
 import { rxState, RxState } from '@rx-angular/state';
 import { finalize, merge, Observable } from 'rxjs';
-import { contains } from '../../../../functions/index';
+import { contains, notBlank } from '../../../../functions/index';
 import { AsyncPipe } from '@angular/common';
+import { RegistrationOptions } from '../../models/registration-options';
 
 interface RegisterUserState {
   isSubmitting: boolean;
   errorMessage: string;
+  options: RegistrationOptions;
+  optionsLoading: boolean;
+  optionsError: string;
+  requiresCompany: boolean;
 }
 
 type ViewModel = RegisterUserState;
@@ -37,8 +42,8 @@ export class RegisterUserList {
 
   readonly userForm = this.formBuilder.nonNullable.group(
     {
-      name: ['', [Validators.required, contains(/\S/, 'blank')]],
-      contactNumber: ['', [Validators.required, Validators.maxLength(30), contains(/\S/, 'blank')]],
+      name: ['', [Validators.required, notBlank]],
+      contactNumber: ['', [Validators.required, Validators.maxLength(30), notBlank]],
       email: ['', [Validators.email, Validators.required]],
       password: [
         '',
@@ -51,6 +56,8 @@ export class RegisterUserList {
         ],
       ],
       confirmPassword: ['', Validators.required],
+      rolePublicId: ['', Validators.required],
+      companyPublicId: this.formBuilder.control<string | null>(null),
     },
     {
       validators: (form) =>
@@ -69,6 +76,8 @@ export class RegisterUserList {
   readonly fieldErrors = computed(() => {
     this.formEvents();
     return {
+      rolePublicId: this.fieldError('rolePublicId', 'Role'),
+      companyPublicId: this.fieldError('companyPublicId', 'Company'),
       name: this.fieldError('name', 'Name'),
       contactNumber: this.fieldError('contactNumber', 'Contact number'),
       email: this.fieldError('email', 'Email address'),
@@ -81,13 +90,26 @@ export class RegisterUserList {
     this.state.set({
       isSubmitting: false,
       errorMessage: '',
+      options: { roles: [], companies: [] },
+      optionsLoading: false,
+      optionsError: '',
+      requiresCompany: false,
     });
+    this.userForm.controls.rolePublicId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateCompanyRequirement());
+    this.loadRegistrationOptions();
 
     this.vm$ = this.state.select();
   }
 
   registerUser(): void {
-    if (this.state.get('isSubmitting')) {
+    if (
+      this.state.get('isSubmitting') ||
+      this.state.get('optionsLoading') ||
+      this.state.get('optionsError') ||
+      !this.state.get('options').roles.length
+    ) {
       return;
     }
     if (this.userForm.invalid) {
@@ -100,9 +122,17 @@ export class RegisterUserList {
       errorMessage: '',
     });
 
-    const { name, contactNumber, email, password } = this.userForm.getRawValue();
+    const { name, contactNumber, email, password, rolePublicId, companyPublicId } =
+      this.userForm.getRawValue();
     this.authService
-      .registerUser({ name: name.trim(), contactNumber: contactNumber.trim(), email, password })
+      .registerUser({
+        name: name.trim(),
+        contactNumber: contactNumber.trim(),
+        email,
+        password,
+        rolePublicId,
+        companyPublicId,
+      })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
@@ -111,10 +141,47 @@ export class RegisterUserList {
       )
       .subscribe({
         next: () => {
-          void this.router.navigate([LOGIN_URL], { queryParams: { registered: '1' } });
+          void this.router.navigate([LOGIN_URL]);
         },
         error: (error: unknown) => this.showRegistrationError(error),
       });
+  }
+
+  loadRegistrationOptions(): void {
+    if (this.state.get('optionsLoading')) return;
+    this.state.set({ optionsLoading: true, optionsError: '' });
+    this.authService
+      .getRegistrationOptions()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.state.set({ optionsLoading: false })),
+      )
+      .subscribe({
+        next: (options) => {
+          this.state.set({ options });
+          this.updateCompanyRequirement();
+        },
+        error: () =>
+          this.state.set({
+            optionsError: 'Unable to load registration options. Please try again.',
+          }),
+      });
+  }
+
+  private updateCompanyRequirement(): void {
+    const requiresCompany =
+      this.state
+        .get('options')
+        .roles.find((role) => role.publicId === this.userForm.controls.rolePublicId.value)
+        ?.requiresCompany === true;
+    this.state.set({ requiresCompany });
+    const company = this.userForm.controls.companyPublicId;
+    if (requiresCompany) company.setValidators(Validators.required);
+    else {
+      company.clearValidators();
+      company.reset(null);
+    }
+    company.updateValueAndValidity();
   }
 
   private fieldError(field: string, label: string): string {
@@ -150,6 +217,8 @@ export class RegisterUserList {
         ['ContactNumber', 'contactNumber'],
         ['Email', 'email'],
         ['Password', 'password'],
+        ['RolePublicId', 'rolePublicId'],
+        ['CompanyPublicId', 'companyPublicId'],
       ]);
       let unrecognized = false;
       let applied = false;
