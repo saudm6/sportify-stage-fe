@@ -9,6 +9,7 @@ export const PAGE_PATHS = {
   register: 'register',
   staff: 'staff',
   dashboard: 'dashboard',
+  bookings: 'bookings',
 };
 export const LOGIN_URL = `/${PAGE_PATHS.login}`;
 

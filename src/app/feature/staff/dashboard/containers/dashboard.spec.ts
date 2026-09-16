@@ -5,7 +5,7 @@ import { ApplicationRef } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Dashboard } from './dashboard';
-import { dateRange } from '../models/dashboard-filters';
+import { dateRange } from '../../shared/models/report-filters';
 
 describe('Staff dashboard', () => {
   let http: HttpTestingController;
@@ -13,8 +13,10 @@ describe('Staff dashboard', () => {
     from: '2026-09-01', to: '2026-09-30',
     summary: { totalBookings: 42, totalBookingRevenue: 123.456, averageBookingValue: 2.939 },
     byBranch: [{ publicId: 'branch', nameEn: 'Seeb', nameAr: '', totalBookings: 42, totalBookingRevenue: 123.456, averageBookingValue: 2.939 }],
-    bySport: [], entries: [], pagination: { totalItems: 0 },
-    availableFilters: { branches: [], sports: [] },
+    bySport: [],
+    entries: [],
+    pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
+    availableFilters: { branches: [], sports: [], courts: [], statuses: [] },
   };
 
   beforeEach(() => {
@@ -22,6 +24,21 @@ describe('Staff dashboard', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+
+  it('links to confirmed bookings using applied filters even while drafts change', async () => {
+    const harness = await RouterTestingHarness.create();
+    const branch = '11111111-1111-1111-1111-111111111111';
+    const sport = '22222222-2222-2222-2222-222222222222';
+    const page = await harness.navigateByUrl(`/staff/dashboard?from=2026-09-01&to=2026-09-30&branchPublicId=${branch}&sportPublicId=${sport}`, Dashboard);
+    http.expectOne(req => req.url.endsWith('/staff/booking-report')).flush(response);
+    page.form.patchValue({ from: '2026-09-15', branchPublicId: '', sportPublicId: '' });
+    harness.detectChanges();
+    const link = harness.routeNativeElement!.querySelector<HTMLAnchorElement>('a[href*="/staff/bookings"]')!;
+    const target = new URL(link.href);
+    expect(Object.fromEntries(target.searchParams)).toEqual({ from: '2026-09-01', to: '2026-09-30',
+      branchPublicId: branch, sportPublicId: sport, status: 'CONFIRMED', page: '1', pageSize: '20' });
+    http.expectNone(req => req.url.endsWith('/staff/booking-report'));
+  });
 
   it('uses Muscat calendar dates, Monday weeks and leap-year month ends', () => {
     expect(dateRange('today', new Date('2026-09-30T21:00:00Z'))).toEqual({ from: '2026-10-01', to: '2026-10-01' });

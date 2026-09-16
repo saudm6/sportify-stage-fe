@@ -5,7 +5,10 @@
       Sportify
     </a>
     <p class="area">Staff workspace</p>
-    <nav aria-label="Staff navigation"><a [routerLink]="['/', paths.staff, paths.dashboard]" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a></nav>
+    <nav aria-label="Staff navigation">
+      <a [routerLink]="['/', paths.staff, paths.dashboard]" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
+      <a [routerLink]="['/', paths.staff, paths.bookings]" routerLinkActive="active" ariaCurrentWhenActive="page">Bookings</a>
+    </nav>
     <p class="sidebar-note">A clear view of every court.</p>
   </aside>
   <div class="content"><router-outlet /></div>

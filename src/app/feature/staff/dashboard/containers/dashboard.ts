@@ -4,9 +4,9 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import { DashboardPage } from '../components/dashboard-page';
-import { BookingReport } from '../models/booking-report';
-import { DashboardFilters, DatePreset, dateRange, validFilters } from '../models/dashboard-filters';
-import { DashboardService } from '../service/dashboard.service';
+import { BookingReport } from '../../shared/models/booking-report';
+import { ReportFilters, DatePreset, dateRange, validFilters } from '../../shared/models/report-filters';
+import { BookingReportService } from '../../shared/service/booking-report.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -19,9 +19,9 @@ import { DashboardService } from '../service/dashboard.service';
 export class Dashboard {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly service = inject(DashboardService);
+  private readonly service = inject(BookingReportService);
   readonly retry = new Subject<void>();
-  readonly applied = signal<DashboardFilters>({ ...dateRange('month'), branchPublicId: '', sportPublicId: '' });
+  readonly applied = signal<ReportFilters>({ ...dateRange('month'), branchPublicId: '', sportPublicId: '' });
   readonly preset = signal<DatePreset>('month');
   readonly form = new FormGroup({
     from: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -30,7 +30,7 @@ export class Dashboard {
     sportPublicId: new FormControl('', { nonNullable: true }),
   }, { validators: control => validFilters(control.getRawValue()) ? null : { invalidFilters: true } });
   readonly report = signal<BookingReport | null>(null);
-  readonly options = signal<BookingReport['availableFilters']>({ branches: [], sports: [] });
+  readonly options = signal<BookingReport['availableFilters']>({ branches: [], sports: [], courts: [], statuses: [] });
   readonly loading = signal(false);
   readonly error = signal('');
   readonly validation = signal('');
@@ -39,7 +39,7 @@ export class Dashboard {
     this.route.queryParamMap.pipe(
       switchMap(params => {
         const defaults = dateRange('month');
-        const filters: DashboardFilters = {
+        const filters: ReportFilters = {
           from: params.get('from') ?? defaults.from,
           to: params.get('to') ?? defaults.to,
           branchPublicId: params.get('branchPublicId') ?? '',

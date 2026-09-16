@@ -6,7 +6,7 @@ The dashboard uses the existing booking-report endpoint and Angular stack with n
 
 `app.routes.ts` loads section routes. `staff.routes.ts` owns staff access and layout, then loads `dashboard.routes.ts`. Existing user/auth URLs are assembled in `user.routes.ts`. The obsolete shopping features (product, order and order-line-item) live under `feature/legacy`, with their URLs preserved through `legacy.routes.ts`.
 
-`core/role.guard.ts` reads each route's `data.allowedRoles`. It requires at least one matching role for every configured ancestor/child policy and denies access if no policy is configured. Staff currently declares `['ADMIN']`; future sections can declare different roles without adding guards. Login landing-page selection remains separate.
+`core/role.guard.ts` reads each route's `data.allowedRoles`. It requires at least one matching role for every configured ancestor/child policy and denies access if no policy is configured. Staff declares `['ADMIN', 'FINANCE', 'SUPERVISOR']`. Login landing-page selection remains separate.
 
 ## Display and filters
 
@@ -18,11 +18,13 @@ The dashboard uses the existing booking-report endpoint and Angular stack with n
 
 ## Release dependencies
 
-Issue #1 remains open. The client gate recognizes the existing backend `ADMIN` role from the JWT role claim, as either a string or array. Missing, malformed or expired sessions and non-admin roles cannot enter the new staff route. This is navigation control, not server authorization.
+Issue #1 is closed. Missing, malformed or expired sessions and accounts without an allowed staff role cannot enter staff routes. This is navigation control, not server authorization.
 
-The backend report endpoint currently uses only `RequireAuthorization()`. Enforce the corresponding staff policy on the server before release and validate customer denial against the deployed API. This branch does not change the backend or claim deployment verification.
+The backend report service enforces current database `FEAT_ANALYTICS_VIEW` permission and company membership. The Bookings detail endpoint uses the same policy; a staff route role alone does not grant data access.
 
-There is no bookings page on main. View bookings is visibly disabled with an explanation. When that page is implemented, replace the disabled control with its RouterLink and pass the container's `applied` filters as query parameters (not the editable form values).
+View bookings opens `/staff/bookings` with the container's applied dates/branch/sport, `status=CONFIRMED`, page 1 and page size 20. Unsaved filter drafts do not change the link. The status restriction matches the dashboard metrics; the staff navigation link opens all booking statuses. Shared date helpers, report types and HTTP service now live under `feature/staff/shared`.
+
+Deploy the extended report filters/options and read-only details API before this frontend. Bookings uses server pagination/search and a non-modal detail panel; it does not offer booking mutations.
 
 ## Verification
 
@@ -35,4 +37,4 @@ Nine tests cover API totals, drafts versus applied filters, URL restoration, can
 
 Desktop (1440px) and mobile (390px) browser checks used mocked report responses: rendering, Apply, refresh, failure/Retry, horizontal overflow and browser exceptions. No live customer data was used.
 
-The complete existing test suite has 11 failures both before and after this change (missing fixture inputs/providers and a stale starter title assertion). Production builds succeed with existing login/register stylesheet budget warnings. Loading features through section routes brings the initial bundle below its warning budget.
+The issue-5 baseline on 2026-09-16 has 7 failing tests and 110 passing tests (legacy missing fixture inputs/providers and a stale starter title assertion). Compare full-suite results with that baseline. Production builds retain existing login/register stylesheet budget warnings.
