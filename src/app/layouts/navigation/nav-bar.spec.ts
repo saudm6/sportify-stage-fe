@@ -15,10 +15,29 @@ describe('Account navigation', () => {
     localStorage.clear();
     TestBed.configureTestingModule({ imports: [NavBar], providers: [provideRouter([
       { path: 'login', component: Page }, { path: 'product', component: Page },
-      { path: 'staff/dashboard', component: Page },
+      { path: 'staff/dashboard', component: Page }, { path: 'account', component: Page },
     ])] });
   });
   afterEach(() => localStorage.clear());
+
+  it.each(['USER', 'ADMIN', 'FINANCE', 'SUPERVISOR'])('offers My Account to %s', async role => {
+    localStorage.setItem('authToken', token([role]));
+    const fixture = TestBed.createComponent(NavBar);
+    await fixture.whenStable();
+    const menu = fixture.nativeElement.querySelector('details');
+    expect(menu).not.toBeNull();
+    menu.querySelector('summary').click();
+    expect(menu.open).toBe(true);
+    expect(menu.querySelector('a').getAttribute('href')).toBe('/account');
+  });
+
+  it.each(['ADMIN', 'FINANCE', 'SUPERVISOR'])('lets %s return from My Account to Dashboard', async role => {
+    localStorage.setItem('authToken', token([role]));
+    const fixture = TestBed.createComponent(NavBar);
+    await TestBed.inject(Router).navigateByUrl('/account');
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('a[href="/staff/dashboard"]')).not.toBeNull();
+  });
 
   it('hides protected links while signed out and updates immediately on sign-in/out', async () => {
     const fixture = TestBed.createComponent(NavBar);

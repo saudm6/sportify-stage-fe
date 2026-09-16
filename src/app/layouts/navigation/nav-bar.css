@@ -2,6 +2,18 @@
   display: block;
 }
 
+.profile-menu { position: relative; }
+.profile-menu-links {
+  position: absolute;
+  inset-inline-end: 0;
+  display: grid;
+  min-width: 10rem;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .main-navbar {
   position: sticky;
   top: 0;
@@ -67,6 +79,11 @@
 }
 
 @media (max-width: 600px) {
+  .profile-menu-links {
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+  }
+
   .navbar-container {
     padding: 0 14px;
   }
