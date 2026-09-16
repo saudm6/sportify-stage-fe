@@ -10,10 +10,9 @@ input { box-sizing: border-box; width: 100%; min-width: 0; padding: 11px 12px; b
 input[readonly] { background: #f1f5f9; }
 input[aria-invalid='true'] { border-color: #b42318; }
 input:focus-visible, button:focus-visible { outline: 3px solid #4f46e5; outline-offset: 2px; }
-.field-error, .error-message { color: #b42318; }
+.field-error { color: #b42318; }
 .field-error { font-size: 0.875rem; }
-.error-message, .success-message { padding: 12px; margin-bottom: 20px; border-radius: 8px; overflow-wrap: anywhere; }
-.error-message { background: #fff1f2; }
+.success-message { padding: 12px; margin-bottom: 20px; border-radius: 8px; overflow-wrap: anywhere; }
 .success-message { color: #166534; background: #f0fdf4; }
 .roles { padding: 16px; border-radius: 8px; background: #f8fafc; overflow-wrap: anywhere; }
 .roles h2 { margin: 0 0 8px; }

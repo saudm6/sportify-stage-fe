@@ -7,11 +7,8 @@
     @if (loading()) {
       <p role="status">Loading your account…</p>
     }
-    @if (error()) {
-      <p class="error-message" role="alert">{{ error() }}</p>
-      @if (!profile() && !loading() && !unavailable()) {
-        <button type="button" (click)="retried.emit()">Retry</button>
-      }
+    @if (!profile() && !loading()) {
+      <button type="button" (click)="retried.emit()">Retry</button>
     }
     @if (success()) {
       <p class="success-message" role="status">{{ success() }}</p>
@@ -21,7 +18,7 @@
         <div class="field">
           <label for="account-name">Name</label>
           <input id="account-name" type="text" autocomplete="name" formControlName="name"
-            maxlength="150" [readOnly]="saving() || unavailable()"
+            maxlength="150" [readOnly]="saving()"
             [attr.aria-invalid]="!!fieldErrors()['name']"
             [attr.aria-describedby]="fieldErrors()['name'] ? 'account-name-error' : null" />
           @if (fieldErrors()['name']) {
@@ -31,7 +28,7 @@
         <div class="field">
           <label for="account-email">Email address</label>
           <input id="account-email" type="email" autocomplete="email" formControlName="email"
-            maxlength="255" [readOnly]="saving() || unavailable()"
+            maxlength="255" [readOnly]="saving()"
             [attr.aria-invalid]="!!fieldErrors()['email']"
             [attr.aria-describedby]="fieldErrors()['email'] ? 'account-email-error' : null" />
           @if (fieldErrors()['email']) {
@@ -41,7 +38,7 @@
         <div class="field">
           <label for="account-contact">Contact number</label>
           <input id="account-contact" type="tel" autocomplete="tel" formControlName="contactNumber"
-            maxlength="30" [readOnly]="saving() || unavailable()"
+            maxlength="30" [readOnly]="saving()"
             [attr.aria-invalid]="!!fieldErrors()['contactNumber']"
             [attr.aria-describedby]="fieldErrors()['contactNumber'] ? 'account-contact-error' : null" />
           @if (fieldErrors()['contactNumber']) {
@@ -58,7 +55,7 @@
         </section>
         <footer>
           <button type="button" [disabled]="loading() || saving()" (click)="cancelled.emit()">Cancel</button>
-          <button class="primary" type="submit" [disabled]="loading() || saving() || unavailable()">
+          <button class="primary" type="submit" [disabled]="loading() || saving()">
             {{ saving() ? 'Saving…' : 'Save' }}
           </button>
         </footer>

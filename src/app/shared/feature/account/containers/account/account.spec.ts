@@ -1,6 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { API_BASE_URL } from '../../../../../core/urls';
 import { Account } from './account';
 import { provideRouter, Router } from '@angular/router';
@@ -12,6 +13,9 @@ const url = `${API_BASE_URL}/users/me`;
 const profile = { publicId: 'dcb4da6e-cac9-48aa-b383-28f3a64c2ba1',
   name: 'Test User', email: 'one@example.com', contactNumber: '+96890000001',
   roles: [{ roleName: 'USER', isActive: true }] };
+
+beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
+afterEach(() => vi.restoreAllMocks());
 
 describe('My Account', () => {
   beforeEach(() => TestBed.configureTestingModule({
@@ -28,6 +32,19 @@ describe('My Account', () => {
     return { fixture, page: fixture.componentInstance, http };
   }
 
+  it.each([400, 401, 403, 404, 409, 500])('logs load failure %s without displaying it', status => {
+    const fixture = TestBed.createComponent(Account);
+    const page = fixture.componentInstance;
+    TestBed.inject(HttpTestingController).expectOne(url)
+      .flush({ detail: 'Server error details' }, { status, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(console.error).toHaveBeenCalledWith('Unable to load account.', expect.objectContaining({ status }));
+    expect(page.loading()).toBe(false);
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Server error details');
+    expect(fixture.nativeElement.querySelector('button').textContent).toContain('Retry');
+  });
+
   it('shows required, length and email errors without sending invalid input', () => {
     const { page, http, fixture } = loaded();
     page.form.setValue({ name: '  ', email: 'invalid', contactNumber: 'x'.repeat(31) });
@@ -43,43 +60,24 @@ describe('My Account', () => {
     http.expectNone(url);
   });
 
-  it.each([
-    [400, { errors: { Name: ['Choose another name.'] } }, 'name', 'Choose another name.'],
-    [409, { detail: 'A user with this email already exists.' }, 'email', 'A user with this email already exists.'],
-    [409, { detail: 'A user with this contact number already exists.' }, 'contactNumber', 'A user with this contact number already exists.'],
-  ] as const)('maps %s field errors and clears them on correction', (status, body, field, message) => {
-    const { page, http, fixture } = loaded();
-    page.save();
-    http.expectOne(url).flush(body, { status, statusText: 'Error' });
-    fixture.detectChanges();
-    expect(page.form.controls[field].getError('server')).toBe(message);
-    expect(fixture.nativeElement.textContent).toContain(message);
-    page.form.controls[field].setValue(field === 'email' ? 'changed@example.com' : 'Changed');
-    expect(page.form.controls[field].hasError('server')).toBe(false);
-    expect(page.form.valid).toBe(true);
-  });
-
-  it.each([{}, { errors: { Unexpected: ['Do not expose this.'] } }, { errors: { Name: [42] } }])(
-    'uses safe fallback for unknown validation payloads', body => {
-      const { page, http } = loaded();
-      page.save();
-      http.expectOne(url).flush(body, { status: 400, statusText: 'Bad Request' });
-      expect(page.error()).toBe('Unable to save your account. Please try again.');
-      expect(page.form.getRawValue().name).toBe(profile.name);
-    });
-
-  it.each([401, 403, 404])('keeps failed edits read-only after %s', status => {
+  it.each([400, 401, 403, 404, 409, 500])('logs save failure %s and preserves editable values', status => {
     const { page, http, fixture } = loaded();
     page.form.controls.name.setValue('Unsaved');
     page.save();
-    http.expectOne(url).flush({}, { status, statusText: 'Error' });
+    http.expectOne(url).flush({
+      errors: { Name: ['Server validation details'] },
+      detail: 'A user with this email already exists.',
+    }, { status, statusText: 'Error' });
     fixture.detectChanges();
+    expect(console.error).toHaveBeenCalledWith('Unable to save account.', expect.objectContaining({ status }));
     expect(page.form.controls.name.value).toBe('Unsaved');
-    expect(page.unavailable()).toBe(true);
-    expect(fixture.nativeElement.querySelector('input').readOnly).toBe(true);
-    expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(true);
-    page.save();
-    http.expectNone(url);
+    expect(page.form.valid).toBe(true);
+    expect(page.saving()).toBe(false);
+    expect(page.success()).toBe('');
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
+    expect(fixture.nativeElement.querySelector('input').readOnly).toBe(false);
+    expect(fixture.nativeElement.querySelector('button[type="submit"]').disabled).toBe(false);
   });
 
   it('retries a failed load and keeps roles read-only', () => {
@@ -119,7 +117,7 @@ describe('My Account', () => {
     page.form.controls.name.setValue('Unsaved');
     page.save();
     http.expectOne(url).flush(null);
-    expect(page.unavailable()).toBe(true);
+    expect(console.error).toHaveBeenCalledWith('Account response was empty.');
     expect(page.success()).toBe('');
     expect(page.form.controls.name.value).toBe('Unsaved');
     fixture.destroy();
