@@ -23,11 +23,12 @@ export interface BookingReport {
   availableFilters: {
     branches: NamedReference[]; sports: NamedReference[];
     courts: (NamedReference & { branchPublicId: string; sportPublicId: string })[];
-    statuses: string[];
+    statuses: BookingStatus[];
   };
 }
 
-export type BookingType = 'CUSTOMER' | 'EXTERNAL';
+export type BookingType = 'INTERNAL' | 'EXTERNAL';
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 export interface BookingReportEntry {
   bookingPublicId: string;
   bookingType: BookingType;
@@ -38,7 +39,7 @@ export interface BookingReportEntry {
   branch: NamedReference;
   court: NamedReference;
   sport: NamedReference;
-  status: string;
+  status: BookingStatus;
   amount: number;
 }
 export interface Pagination {

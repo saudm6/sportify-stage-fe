@@ -50,7 +50,7 @@ Keep `from`, `to`, `branchPublicId`, `sportPublicId`, `page`, `pageSize`. Add op
 |---|---|
 | `courtPublicId` | Exact public-ID match within the caller's company |
 | `status` | Trimmed exact status, maximum 20 characters; omitted/blank means all |
-| `bookingType` | `CUSTOMER` or `EXTERNAL`; omitted/blank means both |
+| `bookingType` | `INTERNAL` or `EXTERNAL`; omitted/blank means both |
 | `search` | Trimmed, maximum 200 characters; case-insensitive literal substring of customer name or transaction reference; exact booking public-ID match when input parses as a GUID |
 
 Apply all predicates to the combined company-scoped query before Count, summary/breakdowns and Skip/Take. Retain deterministic ordering and the existing repeatable-read snapshot. Preserve existing behavior when new parameters are omitted. Treat `%`, `_` and backslash literally in search; use the provider's translated string containment or explicitly escape a LIKE pattern. Do not concatenate SQL.
@@ -85,7 +85,7 @@ export interface BookingDetails extends BookingReportEntry {
 }
 ```
 
-| Value | CUSTOMER | EXTERNAL |
+| Value | INTERNAL | EXTERNAL |
 |---|---|---|
 | End | `UserOrder.EndingTime` | `ExternalBooking.BookingEnd` |
 | Duration | `(EndingTime - StartingTime).TotalMinutes` | `(BookingEnd - BookingStart).TotalMinutes` |
@@ -103,7 +103,7 @@ Keep the existing entry projection semantics for all other fields. Calculate dur
 Move existing report types into `src/app/feature/staff/shared/models/booking-report.ts` and extend with:
 
 ```ts
-export type BookingType = 'CUSTOMER' | 'EXTERNAL';
+export type BookingType = 'INTERNAL' | 'EXTERNAL';
 export interface BookingReportEntry {
   bookingPublicId: string;
   bookingType: BookingType;
@@ -177,7 +177,7 @@ No dedicated route file for a single leaf route, no generic detail service, no s
 - [ ] Make URL query parameters the applied source of truth. Missing dates/page/pageSize get concrete month/1/20 defaults via `replaceUrl`; malformed supplied values show validation without fetching. Enforce integer/range limits for pagination, GUID/source rules and string lengths. Keep `bookingType` as the source query name end-to-end.
 - [ ] Use the dashboard's route → retry → `switchMap` request pattern. Catch errors inside each request so Retry and later navigation still work. Destroy the subscription with `takeUntilDestroyed`. Clear old rows/counts while loading or failed; retain valid option lists to allow changing filters.
 - [ ] Apply writes all form values plus page 1; identical Apply triggers Retry. Reset restores month/all filters/empty search/page 1. Page changes preserve applied filters; page-size changes reset page 1. Do not use unsubmitted form values for pagination.
-- [ ] Render booking start, customer, court/branch, sport, source, status and amount with a real table and column headings. Track rows with `row.bookingType + ':' + row.bookingPublicId`. Add an explicit View details button per row. Labels are Customer and External; status is text as well as color. Blank names display Not recorded.
+- [ ] Render booking start, customer, court/branch, sport, source, status and amount with a real table and column headings. Track rows with `row.bookingType + ':' + row.bookingPublicId`. Add an explicit View details button per row. Labels are Internal and External; status is text as well as color. Blank names display Not recorded.
 - [ ] Use `pagination.totalItems`, `page`, `pageSize` and `totalPages` for count and controls. Never use `summary.totalBookings`. Zero records shows No bookings match these filters. Out-of-range pages show a Return to first page action. Disable impossible Prev/Next navigation.
 - [ ] Provide loading status, local/server validation, forbidden state and Retry for network/5xx errors. Leave 401 handling to the existing interceptor. Do not turn failures into empty results.
 - [ ] Add `PAGE_PATHS.bookings`, a lazy `loadComponent` child inside staffRoutes and a staff navigation RouterLink with `routerLinkActive`/`ariaCurrentWhenActive`. Inherit the existing staff guards.
@@ -241,9 +241,9 @@ No new packages, broad refactors or speculative management APIs are needed. Reco
 ## Implementation notes
 
 - Both repositories use `feat/issue-5-staff-bookings`, based on the main revisions recorded above. Six sub-agents handled backend list, backend detail, backend verification, frontend state, frontend presentation and frontend regression/review.
-- Detail logic is in `BookingReportService.Details.cs`, a partial of the existing service. This kept independent work separate while preserving one service and the existing authorization model.
+- Follow-up correction (2026-09-17): list and detail logic live in one `BookingReportService.cs`; the partial split was removed. Backend Flyway V10 renames only `user_orders` to `bookings`, retaining separate `external_bookings`. API source values are INTERNAL/EXTERNAL and statuses are PENDING/CONFIRMED/CANCELLED.
 - The new page keeps the dashboard palette/type, with native filters, a readable table, source/status labels and a non-modal detail panel. It displays offset-free timestamps as Oman wall-clock values and explicit-offset timestamps in Asia/Muscat.
-- Backend build and 62 real HTTP checks passed against a new disposable PostgreSQL database. No backend testing infrastructure or dependencies were added.
+- Backend build and 77 real HTTP checks passed against a new disposable PostgreSQL database. No backend testing infrastructure or dependencies were added.
 - Frontend regression tests cover the real router and mocked HTTP backend; browser verification additionally uses the running backend and seeded records. Full-suite baseline contains seven existing failures, tracked separately from the new feature.
 
 ### Final verification
@@ -251,5 +251,5 @@ No new packages, broad refactors or speculative management APIs are needed. Reco
 - Focused staff/guard suite: 18 tests passing. Full frontend suite: 117 passing and the same seven legacy failures as the 110-pass baseline. No new failures.
 - Frontend production build and backend solution build pass. Existing authentication stylesheet budgets and backend package warnings remain.
 - Mocked browser checks at 1440px/390px pass: both booking sources, composite identity, details, focus/Escape restoration, draft/apply/refresh, error/retry, no body overflow or browser exceptions. Oman time was checked in a New York browser timezone.
-- Browser checks against the live disposable API pass: both sources/details, server totals/search, refresh, matching CONFIRMED dashboard navigation and mobile layout. Sixty-two separate backend HTTP checks verify data and access rules.
-- Review corrected filter accessible names, a wrapping pagination label and an off-screen table header that caused body overflow. No new packages, booking mutations or database migrations were introduced.
+- Browser checks against the live disposable API pass: both sources/details, server totals/search, refresh, matching CONFIRMED dashboard navigation and mobile layout. Seventy-seven separate backend HTTP checks verify data and access rules.
+- Review corrected filter accessible names, a wrapping pagination label and an off-screen table header that caused body overflow. No new packages or booking mutations were introduced. Follow-up Flyway V10 renames the internal table only; release it with the matching backend.

@@ -86,7 +86,7 @@ export class BookingsPage {
     return value?.trim() || 'Not recorded';
   }
   source(row: BookingReportEntry): string {
-    return row.bookingType === 'CUSTOMER' ? 'Customer' : 'External';
+    return row.bookingType === 'INTERNAL' ? 'Internal' : 'External';
   }
   status(value: string): string {
     return value

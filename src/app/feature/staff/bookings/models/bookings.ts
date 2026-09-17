@@ -30,9 +30,9 @@ export function validBookingsFilters(filters: BookingsFilters): boolean {
     validFilters(filters) &&
     validId(filters.courtPublicId) &&
     (!filters.bookingType ||
-      filters.bookingType === 'CUSTOMER' ||
+      filters.bookingType === 'INTERNAL' ||
       filters.bookingType === 'EXTERNAL') &&
-    filters.status.trim().length <= 20 &&
+    ['', 'PENDING', 'CONFIRMED', 'CANCELLED'].includes(filters.status.trim()) &&
     filters.search.trim().length <= 200
   );
 }

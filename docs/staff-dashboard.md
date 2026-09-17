@@ -24,7 +24,7 @@ The backend report service enforces current database `FEAT_ANALYTICS_VIEW` permi
 
 View bookings opens `/staff/bookings` with the container's applied dates/branch/sport, `status=CONFIRMED`, page 1 and page size 20. Unsaved filter drafts do not change the link. The status restriction matches the dashboard metrics; the staff navigation link opens all booking statuses. Shared date helpers, report types and HTTP service now live under `feature/staff/shared`.
 
-Deploy the extended report filters/options and read-only details API before this frontend. Bookings uses server pagination/search and a non-modal detail panel; it does not offer booking mutations.
+Deploy the matching backend with Flyway V10 (internal `user_orders` renamed to `bookings`) and the extended report filters/options and read-only details API with this frontend. Source values are `INTERNAL`/`EXTERNAL`, replacing `CUSTOMER`; statuses are `PENDING`/`CONFIRMED`/`CANCELLED`. External bookings stay separate. Bookings uses server pagination/search and a non-modal detail panel; it does not offer booking mutations.
 
 ## Verification
 

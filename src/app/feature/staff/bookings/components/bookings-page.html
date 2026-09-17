@@ -2,7 +2,7 @@
   <header class="page-heading">
     <div>
       <h1>Bookings</h1>
-      <p>Review customer and external bookings across your venues.</p>
+      <p>Review internal and external bookings across your venues.</p>
     </div>
     <span class="timezone">All times in Oman <strong>OMR</strong></span>
   </header>
@@ -52,7 +52,7 @@
       <label
         >Source<select aria-label="Source" formControlName="bookingType">
           <option value="">All sources</option>
-          <option value="CUSTOMER">Customer</option>
+          <option value="INTERNAL">Internal</option>
           <option value="EXTERNAL">External</option>
         </select></label
       >
@@ -133,7 +133,7 @@
                     <td>
                       <span class="source"
                         ><svg viewBox="0 0 24 24" aria-hidden="true">
-                          @if (row.bookingType === 'CUSTOMER') {
+                          @if (row.bookingType === 'INTERNAL') {
                             <circle cx="12" cy="7" r="3"></circle>
                             <path d="M5 21v-3a7 7 0 0 1 14 0v3"></path>
                           } @else {
@@ -281,7 +281,7 @@
             <dt>External notes</dt>
             <dd class="notes">
               {{
-                booking.bookingType === 'CUSTOMER'
+                booking.bookingType === 'INTERNAL'
                   ? 'Not applicable'
                   : recorded(booking.externalNotes)
               }}

@@ -16,7 +16,7 @@ describe('Staff bookings', () => {
   const reference = { publicId: id, nameEn: 'Seeb', nameAr: '' };
   const customer: BookingReportEntry = {
     bookingPublicId: id,
-    bookingType: 'CUSTOMER',
+    bookingType: 'INTERNAL',
     transactionReference: null,
     bookingStart: '2026-09-16T10:00:00',
     recordedAt: '2026-09-01T09:00:00',
@@ -85,12 +85,13 @@ describe('Staff bookings', () => {
     for (const label of ['Branch', 'Sport', 'Court', 'Status', 'Source']) {
       expect(root.querySelector(`select[aria-label="${label}"]`)).not.toBeNull();
     }
+    expect(root.querySelector('select[aria-label="Source"] option[value="INTERNAL"]')?.textContent).toBe('Internal');
     const buttons = root.querySelectorAll<HTMLButtonElement>('button.view');
     const field = (label: string) =>
       [...root.querySelectorAll('dt')].find((node) => node.textContent === label)!
         .nextElementSibling!.textContent.trim();
     buttons[0].click();
-    detail('CUSTOMER').flush(details(customer));
+    detail('INTERNAL').flush(details(customer));
     harness.detectChanges();
     expect(field('Transaction reference')).toBe('Not recorded');
     expect(field('Customer contact')).toBe('Not recorded');
@@ -115,7 +116,7 @@ describe('Staff bookings', () => {
     page.form.patchValue({
       search: ' Alice ',
       status: 'CONFIRMED',
-      bookingType: 'CUSTOMER',
+      bookingType: 'INTERNAL',
       courtPublicId: id,
     });
     http.expectNone((req) => req.url.endsWith('/staff/booking-report'));
@@ -125,7 +126,7 @@ describe('Staff bookings', () => {
     for (const [key, value] of Object.entries({
       search: 'Alice',
       status: 'CONFIRMED',
-      bookingType: 'CUSTOMER',
+      bookingType: 'INTERNAL',
       courtPublicId: id,
     })) {
       expect(applied.request.params.get(key)).toBe(value);
@@ -162,16 +163,16 @@ describe('Staff bookings', () => {
     expect(staleList.cancelled).toBe(true);
     list().flush(report);
     page.openDetails(customer);
-    const staleDetail = detail('CUSTOMER');
+    const staleDetail = detail('INTERNAL');
     page.openDetails(external);
     expect(staleDetail.cancelled).toBe(true);
     const closedDetail = detail('EXTERNAL');
     page.closeDetails();
     expect(closedDetail.cancelled).toBe(true);
     page.openDetails(customer);
-    detail('CUSTOMER').flush({}, { status: 500, statusText: 'Error' });
+    detail('INTERNAL').flush({}, { status: 500, statusText: 'Error' });
     page.detailRetry.next();
-    detail('CUSTOMER').flush(details(customer));
+    detail('INTERNAL').flush(details(customer));
     expect(page.detail()).not.toBeNull();
     page.openDetails(external);
     const navigatedDetail = detail('EXTERNAL');
@@ -220,7 +221,7 @@ describe('Staff bookings', () => {
       [403, 'Access denied'],
     ] as const) {
       page.openDetails(customer);
-      detail('CUSTOMER').flush({}, { status, statusText: 'Error' });
+      detail('INTERNAL').flush({}, { status, statusText: 'Error' });
       harness.detectChanges();
       expect(harness.routeNativeElement!.textContent).toContain(text);
       expect(harness.routeNativeElement!.querySelectorAll('tbody tr').length).toBe(2);
@@ -235,6 +236,8 @@ describe('Staff bookings', () => {
       'page=1000001',
       'pageSize=101',
       'bookingType=OTHER',
+      'bookingType=CUSTOMER',
+      'status=OTHER',
       'courtPublicId=00000000-0000-0000-0000-000000000000',
       'from=2026-02-30',
       `search=${'x'.repeat(201)}`,
@@ -261,7 +264,7 @@ describe('Staff bookings', () => {
     expect(initial.request.params.get('from')).toBe(dateRange('month').from);
     initial.flush(report);
     expect(TestBed.inject(Router).url).toContain('pageSize=20');
-    const page = await harness.navigateByUrl(`${url}&search=Alice&bookingType=CUSTOMER`, Bookings);
+    const page = await harness.navigateByUrl(`${url}&search=Alice&bookingType=INTERNAL`, Bookings);
     list().flush(report);
     await page.reset();
     const reset = list();
