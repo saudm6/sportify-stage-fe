@@ -8,19 +8,12 @@ import { ReportFilters } from '../models/report-filters';
 export class BookingReportService {
   private readonly http = inject(HttpClient);
 
-  getReport(filters: ReportFilters, options: {
-    courtPublicId?: string; status?: string; bookingType?: string; search?: string;
-    page?: number; pageSize?: number;
-  } = {}) {
+  getReport(filters: ReportFilters) {
     const params: Record<string, string | number> = {
-      from: filters.from, to: filters.to, page: options.page ?? 1, pageSize: options.pageSize ?? 20,
+      from: filters.from, to: filters.to, page: 1, pageSize: 20,
     };
     for (const key of ['branchPublicId', 'sportPublicId'] as const) {
       if (filters[key]) params[key] = filters[key];
-    }
-    for (const key of ['courtPublicId', 'status', 'bookingType', 'search'] as const) {
-      const value = options[key]?.trim();
-      if (value) params[key] = value;
     }
     return this.http.get<BookingReport>(`${API_BASE_URL}/staff/booking-report`, { params });
   }

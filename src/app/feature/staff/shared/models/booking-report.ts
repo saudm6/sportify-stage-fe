@@ -12,12 +12,15 @@ export interface BookingSummary {
 
 export interface BookingBreakdown extends NamedReference, BookingSummary {}
 
-export interface BookingReport {
-  from: string;
-  to: string;
+export interface BookingReport extends BookingList {
   summary: BookingSummary;
   byBranch: BookingBreakdown[];
   bySport: BookingBreakdown[];
+}
+
+export interface BookingList {
+  from: string;
+  to: string;
   entries: BookingReportEntry[];
   pagination: Pagination;
   availableFilters: {

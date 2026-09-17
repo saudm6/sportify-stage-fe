@@ -4,9 +4,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
-import { BookingReport, BookingReportEntry } from '../../shared/models/booking-report';
+import { BookingList, BookingReportEntry } from '../../shared/models/booking-report';
 import { dateRange } from '../../shared/models/report-filters';
-import { BookingReportService } from '../../shared/service/booking-report.service';
+
 import { BookingsPage } from '../components/bookings-page';
 import {
   BookingDetails,
@@ -67,7 +67,7 @@ function requestError(error: HttpErrorResponse, detail = false): string {
 export class Bookings {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly reports = inject(BookingReportService);
+
   private readonly bookings = inject(BookingsService);
   readonly retry = new Subject<void>();
   readonly detailRetry = new Subject<void>();
@@ -89,8 +89,8 @@ export class Bookings {
         validBookingsFilters(control.getRawValue()) ? null : { invalidFilters: true },
     },
   );
-  readonly report = signal<BookingReport | null>(null);
-  readonly options = signal<BookingReport['availableFilters']>({
+  readonly report = signal<BookingList | null>(null);
+  readonly options = signal<BookingList['availableFilters']>({
     branches: [],
     sports: [],
     courts: [],
@@ -182,7 +182,7 @@ export class Bookings {
                 return of(null);
               }
               this.loading.set(true);
-              return this.reports.getReport(query, query).pipe(
+              return this.bookings.getList(query).pipe(
                 map((report) => ({ report, error: '' })),
                 catchError((error) => of({ report: null, error: requestError(error) })),
               );

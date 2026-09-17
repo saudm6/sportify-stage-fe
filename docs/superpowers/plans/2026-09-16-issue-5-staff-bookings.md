@@ -253,3 +253,9 @@ No new packages, broad refactors or speculative management APIs are needed. Reco
 - Mocked browser checks at 1440px/390px pass: both booking sources, composite identity, details, focus/Escape restoration, draft/apply/refresh, error/retry, no body overflow or browser exceptions. Oman time was checked in a New York browser timezone.
 - Browser checks against the live disposable API pass: both sources/details, server totals/search, refresh, matching CONFIRMED dashboard navigation and mobile layout. Seventy-seven separate backend HTTP checks verify data and access rules.
 - Review corrected filter accessible names, a wrapping pagination label and an off-screen table header that caused body overflow. No new packages or booking mutations were introduced. Follow-up Flyway V10 renames the internal table only; release it with the matching backend.
+
+### Approved follow-up: focused list endpoint
+
+The Bookings page now requests `GET /api/staff/bookings` through `BookingsService.getList(BookingsQuery)`. The typed `BookingList` response contains dates, entries, pagination and filter options only. Dashboard retains `GET /api/staff/booking-report` and its existing response. This supersedes the original plan to share the dashboard request for both pages; shared date and response types remain reused. Bookings tests and browser mocks intentionally omit summary and breakdown fields.
+
+Follow-up verification: 18 focused frontend tests and production build pass; mocked and live browser checks pass with list-only responses and dashboard navigation. Backend verification passes 142 HTTP checks plus concurrent court-lock checks; list SQL skips dashboard grouping.

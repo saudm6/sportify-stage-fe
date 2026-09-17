@@ -22,9 +22,9 @@ Issue #1 is closed. Missing, malformed or expired sessions and accounts without 
 
 The backend report service enforces current database `FEAT_ANALYTICS_VIEW` permission and company membership. The Bookings detail endpoint uses the same policy; a staff route role alone does not grant data access.
 
-View bookings opens `/staff/bookings` with the container's applied dates/branch/sport, `status=CONFIRMED`, page 1 and page size 20. Unsaved filter drafts do not change the link. The status restriction matches the dashboard metrics; the staff navigation link opens all booking statuses. Shared date helpers, report types and HTTP service now live under `feature/staff/shared`.
+View bookings opens `/staff/bookings` with the container's applied dates/branch/sport, `status=CONFIRMED`, page 1 and page size 20. Unsaved filter drafts do not change the link. The status restriction matches the dashboard metrics; the staff navigation link opens all booking statuses. Shared date helpers and response types live under `feature/staff/shared`. Dashboard uses `/api/staff/booking-report`; BookingsService uses `/api/staff/bookings` for the list and its existing detail route. List responses contain no dashboard summary or breakdown fields.
 
-Deploy the matching backend with Flyway V10 (internal `user_orders` renamed to `bookings`) and the extended report filters/options and read-only details API with this frontend. Source values are `INTERNAL`/`EXTERNAL`, replacing `CUSTOMER`; statuses are `PENDING`/`CONFIRMED`/`CANCELLED`. External bookings stay separate. Bookings uses server pagination/search and a non-modal detail panel; it does not offer booking mutations.
+Deploy the matching backend with Flyway V10 (internal `user_orders` renamed to `bookings`) and the dedicated bookings list and read-only details API with this frontend. Source values are `INTERNAL`/`EXTERNAL`, replacing `CUSTOMER`; statuses are `PENDING`/`CONFIRMED`/`CANCELLED`. External bookings stay separate. Bookings uses server pagination/search and a non-modal detail panel; it does not offer booking mutations.
 
 ## Verification
 

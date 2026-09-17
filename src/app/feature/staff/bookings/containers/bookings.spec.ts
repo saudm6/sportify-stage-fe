@@ -4,7 +4,7 @@ import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { BookingReport, BookingReportEntry } from '../../shared/models/booking-report';
+import { BookingList, BookingReportEntry } from '../../shared/models/booking-report';
 import { dateRange } from '../../shared/models/report-filters';
 import { BookingDetails } from '../models/bookings';
 import { Bookings } from './bookings';
@@ -33,12 +33,9 @@ describe('Staff bookings', () => {
     customerName: '',
     status: 'CANCELLED',
   };
-  const report: BookingReport = {
+  const report: BookingList = {
     from: '2026-09-01',
     to: '2026-09-30',
-    summary: { totalBookings: 3, totalBookingRevenue: 36.9, averageBookingValue: 12.3 },
-    byBranch: [],
-    bySport: [],
     entries: [customer, external],
     pagination: { page: 1, pageSize: 20, totalItems: 41, totalPages: 3 },
     availableFilters: {
@@ -57,7 +54,7 @@ describe('Staff bookings', () => {
     cancelledAt: null,
     cancelledByName: null,
   });
-  const list = () => http.expectOne((req) => req.url.endsWith('/staff/booking-report'));
+  const list = () => http.expectOne((req) => req.url.endsWith('/staff/bookings'));
   const detail = (source: string) =>
     http.expectOne((req) => req.url.endsWith(`/staff/bookings/${source}/${id}`));
 
@@ -85,10 +82,13 @@ describe('Staff bookings', () => {
     for (const label of ['Branch', 'Sport', 'Court', 'Status', 'Source']) {
       expect(root.querySelector(`select[aria-label="${label}"]`)).not.toBeNull();
     }
-    expect(root.querySelector('select[aria-label="Source"] option[value="INTERNAL"]')?.textContent).toBe('Internal');
+    expect(
+      root.querySelector('select[aria-label="Source"] option[value="INTERNAL"]')?.textContent,
+    ).toBe('Internal');
     const buttons = root.querySelectorAll<HTMLButtonElement>('button.view');
     const field = (label: string) =>
-      [...root.querySelectorAll('dt')].find((node) => node.textContent === label)!
+      [...root.querySelectorAll('dt')]
+        .find((node) => node.textContent === label)!
         .nextElementSibling!.textContent.trim();
     buttons[0].click();
     detail('INTERNAL').flush(details(customer));
@@ -119,7 +119,7 @@ describe('Staff bookings', () => {
       bookingType: 'INTERNAL',
       courtPublicId: id,
     });
-    http.expectNone((req) => req.url.endsWith('/staff/booking-report'));
+    http.expectNone((req) => req.url.endsWith('/staff/bookings'));
     await page.apply();
     const applied = list();
     expect(applied.request.params.get('page')).toBe('1');
@@ -247,7 +247,7 @@ describe('Staff bookings', () => {
       const [key, value] = query.split('=');
       params.set(key, value);
       await harness.navigateByUrl(`/staff/bookings?${params}`, Bookings);
-      http.expectNone((req) => req.url.endsWith('/staff/booking-report'));
+      http.expectNone((req) => req.url.endsWith('/staff/bookings'));
       expect(harness.routeNativeElement!.textContent).toContain('Choose valid filters');
     }
     const page = await harness.navigateByUrl(url.replace('page=1', 'page=0'), Bookings);

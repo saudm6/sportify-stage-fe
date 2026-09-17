@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import {
-  BookingReport,
+  BookingList,
   BookingReportEntry,
   NamedReference,
 } from '../../shared/models/booking-report';
@@ -25,8 +25,8 @@ import { BookingDetails, BookingIdentity, BookingsForm, BookingsQuery } from '..
 export class BookingsPage {
   readonly form = input.required<BookingsForm>();
   readonly applied = input.required<BookingsQuery>();
-  readonly report = input<BookingReport | null>(null);
-  readonly options = input.required<BookingReport['availableFilters']>();
+  readonly report = input<BookingList | null>(null);
+  readonly options = input.required<BookingList['availableFilters']>();
   readonly loading = input(false);
   readonly error = input('');
   readonly validation = input('');
