@@ -9,21 +9,45 @@ import { dateRange } from '../../shared/models/report-filters';
 
 describe('Staff dashboard', () => {
   let http: HttpTestingController;
+  let optionsRequests: number;
+  let expectedOptionsRequests: number;
+  const options = {
+    branches: [],
+    sports: [],
+    courts: [],
+    statuses: ['PENDING', 'CONFIRMED', 'CANCELLED'],
+    bookingTypes: ['EXTERNAL'],
+  };
+  const filters = () => {
+    optionsRequests++;
+    return http.expectOne((req) => req.url.endsWith('/staff/booking-filters'));
+  };
   const response = {
     from: '2026-09-01', to: '2026-09-30',
     summary: { totalBookings: 42, totalBookingRevenue: 123.456, averageBookingValue: 2.939 },
     byBranch: [{ publicId: 'branch', nameEn: 'Seeb', nameAr: '', totalBookings: 42, totalBookingRevenue: 123.456, averageBookingValue: 2.939 }],
     bySport: [],
-    entries: [],
-    pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
-    availableFilters: { branches: [], sports: [], courts: [], statuses: [] },
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'staff/dashboard', component: Dashboard }]), provideHttpClient(), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
+    optionsRequests = 0; expectedOptionsRequests = 1;
   });
-  afterEach(() => http.verify());
+  afterEach(() => {
+    const requests = http.match((req) => req.url.endsWith('/staff/booking-filters'));
+    optionsRequests += requests.length;
+    expect(optionsRequests).toBe(expectedOptionsRequests);
+    requests[0]?.flush({
+      branches: [],
+      sports: [],
+      courts: [],
+      statuses: ['PENDING', 'CONFIRMED', 'CANCELLED'],
+      bookingTypes: ['INTERNAL', 'EXTERNAL'],
+    });
+    http.verify();
+  });
+
 
   it('links to confirmed bookings using applied filters even while drafts change', async () => {
     const harness = await RouterTestingHarness.create();
@@ -41,6 +65,7 @@ describe('Staff dashboard', () => {
   });
 
   it('uses Muscat calendar dates, Monday weeks and leap-year month ends', () => {
+    expectedOptionsRequests = 0;
     expect(dateRange('today', new Date('2026-09-30T21:00:00Z'))).toEqual({ from: '2026-10-01', to: '2026-10-01' });
     expect(dateRange('week', new Date('2026-09-06T12:00:00Z'))).toEqual({ from: '2026-08-31', to: '2026-09-06' });
     expect(dateRange('month', new Date('2024-02-10T12:00:00Z'))).toEqual({ from: '2024-02-01', to: '2024-02-29' });
@@ -50,7 +75,8 @@ describe('Staff dashboard', () => {
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl('/staff/dashboard?from=2026-09-01&to=2026-09-30', Dashboard);
     const first = http.expectOne(req => req.url.endsWith('/staff/booking-report'));
-    expect(first.request.params.get('page')).toBe('1');
+    expect(first.request.params.has('page')).toBe(false);
+    expect(first.request.params.has('pageSize')).toBe(false);
     first.flush(response);
     harness.detectChanges();
     expect(harness.routeNativeElement!.textContent).toContain('123.456');
@@ -126,5 +152,52 @@ describe('Staff dashboard', () => {
     expect(reset.request.params.has('sportPublicId')).toBe(false);
     expect(page.preset()).toBe('month');
     reset.flush(response);
+  });
+  it('retries options and data independently, preserves options on refresh failure and cancels on destruction', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(
+      '/staff/dashboard?from=2026-09-01&to=2026-09-30',
+      Dashboard,
+    );
+    filters().flush({}, { status: 500, statusText: 'Error' });
+    http.expectOne((req) => req.url.endsWith('/staff/booking-report')).flush(response);
+    harness.detectChanges();
+    expect(page.report()).toEqual(response);
+    expect(page.optionsError()).toContain('Filter options');
+    expect(harness.routeNativeElement!.textContent).toContain('Retry filter options');
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    http.expectNone((req) => req.url.endsWith('/staff/booking-report'));
+    const refreshed = filters();
+    expect(refreshed.request.params.keys()).toEqual([]);
+    refreshed.flush(options);
+    page.retry.next();
+    http.expectNone((req) => req.url.endsWith('/staff/booking-filters'));
+    http
+      .expectOne((req) => req.url.endsWith('/staff/booking-report'))
+      .flush({}, { status: 500, statusText: 'Error' });
+    expect(page.options()).toEqual(options);
+    expect(page.optionsError()).toBe('');
+    page.retry.next();
+    http.expectOne((req) => req.url.endsWith('/staff/booking-report')).flush(response);
+    expect(page.report()).toEqual(response);
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    filters().flush({}, { status: 500, statusText: 'Error' });
+    expect(page.options()).toEqual(options);
+    expect(page.report()).toEqual(response);
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    const pendingOptions = filters();
+    await harness.navigateByUrl('/staff/dashboard?from=2026-09-02&to=2026-09-30', Dashboard);
+    const pendingData = http.expectOne((req) => req.url.endsWith('/staff/booking-report'));
+
+    harness.fixture.destroy();
+    expect(pendingOptions.cancelled).toBe(true);
+    expect(pendingData.cancelled).toBe(true);
+
+    page.optionsRetry.next();
+    page.retry.next();
+    http.expectNone((req) => req.url.includes('/staff/'));
   });
 });

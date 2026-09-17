@@ -52,8 +52,9 @@
       <label
         >Source<select aria-label="Source" formControlName="bookingType">
           <option value="">All sources</option>
-          <option value="INTERNAL">Internal</option>
-          <option value="EXTERNAL">External</option>
+          @for (item of options().bookingTypes; track item) {
+            <option [value]="item">{{ item === 'INTERNAL' ? 'Internal' : 'External' }}</option>
+          }
         </select></label
       >
       <label class="search"
@@ -73,6 +74,15 @@
     </div>
     @if (validation()) {
       <p class="error" role="alert">{{ validation() }}</p>
+    }
+    @if (optionsLoading()) {
+      <p role="status">Loading filter options�</p>
+    }
+    @if (optionsError()) {
+      <p class="error" role="alert">
+        {{ optionsError() }}
+        <button type="button" (click)="retryOptions.emit()">Retry filter options</button>
+      </p>
     }
   </form>
   <div class="workspace" [class.with-detail]="selected()">

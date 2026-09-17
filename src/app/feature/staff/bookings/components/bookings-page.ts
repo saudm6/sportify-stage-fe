@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import {
+  BookingFilterOptions,
   BookingList,
   BookingReportEntry,
   NamedReference,
@@ -26,7 +27,10 @@ export class BookingsPage {
   readonly form = input.required<BookingsForm>();
   readonly applied = input.required<BookingsQuery>();
   readonly report = input<BookingList | null>(null);
-  readonly options = input.required<BookingList['availableFilters']>();
+  readonly options = input.required<BookingFilterOptions>();
+  readonly optionsLoading = input(false);
+  readonly optionsError = input('');
+  readonly retryOptions = output();
   readonly loading = input(false);
   readonly error = input('');
   readonly validation = input('');

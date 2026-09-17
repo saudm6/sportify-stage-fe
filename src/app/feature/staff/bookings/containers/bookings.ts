@@ -4,7 +4,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
-import { BookingList, BookingReportEntry } from '../../shared/models/booking-report';
+import {
+  BookingFilterOptions,
+  BookingList,
+  BookingReportEntry,
+} from '../../shared/models/booking-report';
+import { BookingReportService } from '../../shared/service/booking-report.service';
 import { dateRange } from '../../shared/models/report-filters';
 
 import { BookingsPage } from '../components/bookings-page';
@@ -47,6 +52,9 @@ function requestError(error: HttpErrorResponse, detail = false): string {
     [applied]="applied()"
     [report]="report()"
     [options]="options()"
+    [optionsLoading]="optionsLoading()"
+    [optionsError]="optionsError()"
+    (retryOptions)="optionsRetry.next()"
     [loading]="loading()"
     [error]="error()"
     [validation]="validation()"
@@ -68,7 +76,11 @@ export class Bookings {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
+  private readonly service = inject(BookingReportService);
   private readonly bookings = inject(BookingsService);
+  readonly optionsRetry = new Subject<void>();
+  readonly optionsLoading = signal(false);
+  readonly optionsError = signal('');
   readonly retry = new Subject<void>();
   readonly detailRetry = new Subject<void>();
   private readonly selection = new Subject<BookingIdentity | null>();
@@ -90,11 +102,12 @@ export class Bookings {
     },
   );
   readonly report = signal<BookingList | null>(null);
-  readonly options = signal<BookingList['availableFilters']>({
+  readonly options = signal<BookingFilterOptions>({
     branches: [],
     sports: [],
     courts: [],
     statuses: [],
+    bookingTypes: [],
   });
   readonly loading = signal(false);
   readonly error = signal('');
@@ -105,6 +118,26 @@ export class Bookings {
   readonly detailError = signal('');
 
   constructor() {
+    this.optionsRetry
+      .pipe(
+        startWith(undefined),
+        switchMap(() => {
+          this.optionsLoading.set(true);
+          this.optionsError.set('');
+          return this.service.getFilters().pipe(
+            map((options) => ({ options, error: '' })),
+            catchError(() =>
+              of({ options: null, error: 'Filter options could not be loaded. Try again.' }),
+            ),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((result) => {
+        this.optionsLoading.set(false);
+        this.optionsError.set(result.error);
+        if (result.options) this.options.set(result.options);
+      });
     this.selection
       .pipe(
         switchMap((identity) =>
@@ -196,7 +229,6 @@ export class Bookings {
         if (result) {
           this.report.set(result.report);
           this.error.set(result.error);
-          if (result.report) this.options.set(result.report.availableFilters);
         }
       });
     for (const control of [this.form.controls.branchPublicId, this.form.controls.sportPublicId]) {

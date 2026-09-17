@@ -24,6 +24,8 @@
     </div>
     <p class="hint">Date presets use Oman time. This week runs Monday to Sunday.</p>
     @if (validation()) { <p role="alert" class="error">{{ validation() }}</p> }
+    @if (optionsLoading()) { <p role="status">Loading filter options…</p> }
+    @if (optionsError()) { <p class="error" role="alert">{{ optionsError() }} <button type="button" (click)="retryOptions.emit()">Retry filter options</button></p> }
   </form>
 
   <section class="results" [attr.aria-busy]="loading()" aria-label="Booking metrics">

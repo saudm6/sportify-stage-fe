@@ -4,7 +4,7 @@ import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { BookingList, BookingReportEntry } from '../../shared/models/booking-report';
+import { BookingReportEntry } from '../../shared/models/booking-report';
 import { dateRange } from '../../shared/models/report-filters';
 import { BookingDetails } from '../models/bookings';
 import { Bookings } from './bookings';
@@ -33,18 +33,20 @@ describe('Staff bookings', () => {
     customerName: '',
     status: 'CANCELLED',
   };
-  const report: BookingList = {
+  const report = {
     from: '2026-09-01',
     to: '2026-09-30',
     entries: [customer, external],
     pagination: { page: 1, pageSize: 20, totalItems: 41, totalPages: 3 },
-    availableFilters: {
-      branches: [reference],
-      sports: [reference],
-      courts: [{ ...reference, branchPublicId: id, sportPublicId: id }],
-      statuses: ['CONFIRMED', 'CANCELLED'],
-    },
   };
+  const options = {
+    branches: [reference],
+    sports: [reference],
+    courts: [{ ...reference, branchPublicId: id, sportPublicId: id }],
+    statuses: ['PENDING', 'CONFIRMED', 'CANCELLED'],
+    bookingTypes: ['INTERNAL', 'EXTERNAL'],
+  };
+
   const details = (row: BookingReportEntry): BookingDetails => ({
     ...row,
     bookingEnd: '2026-09-16T11:00:00',
@@ -54,7 +56,21 @@ describe('Staff bookings', () => {
     cancelledAt: null,
     cancelledByName: null,
   });
-  const list = () => http.expectOne((req) => req.url.endsWith('/staff/bookings'));
+  let optionsRequests: number;
+  let expectedOptionsRequests: number;
+  const filters = () => {
+    optionsRequests++;
+    return http.expectOne((req) => req.url.endsWith('/staff/booking-filters'));
+  };
+  const flushOptions = () => {
+    const requests = http.match((req) => req.url.endsWith('/staff/booking-filters'));
+    optionsRequests += requests.length;
+    requests.forEach((request) => request.flush(options));
+  };
+  const list = () => {
+    flushOptions();
+    return http.expectOne((req) => req.url.endsWith('/staff/bookings'));
+  };
   const detail = (source: string) =>
     http.expectOne((req) => req.url.endsWith(`/staff/bookings/${source}/${id}`));
 
@@ -67,8 +83,14 @@ describe('Staff bookings', () => {
       ],
     });
     http = TestBed.inject(HttpTestingController);
+    optionsRequests = 0;
+    expectedOptionsRequests = 1;
   });
-  afterEach(() => http.verify());
+  afterEach(() => {
+    flushOptions();
+    expect(optionsRequests).toBe(expectedOptionsRequests);
+    http.verify();
+  });
 
   it('renders composite identities and full totals, opens source-specific details and labels missing values precisely', async () => {
     const harness = await RouterTestingHarness.create();
@@ -100,10 +122,15 @@ describe('Staff bookings', () => {
     expect(field('Start')).toContain('10:00');
     expect(field('Recorded at')).toContain('01 Sept 2026');
     buttons[1].click();
-    detail('EXTERNAL').flush(details(external));
+    detail('EXTERNAL').flush({
+      ...details(external),
+      customerContact: '91234567',
+      externalNotes: 'Bring rackets',
+    });
     harness.detectChanges();
     expect(field('Transaction reference')).toBe('Not applicable');
-    expect(field('External notes')).toBe('Not recorded');
+    expect(field('Customer contact')).toBe('91234567');
+    expect(field('External notes')).toBe('Bring rackets');
     expect(field('Cancelled at')).toBe('Not recorded');
     expect(field('Cancelled by')).toBe('Unavailable for external bookings');
     expect(root.textContent).not.toMatch(/unpaid/i);
@@ -272,5 +299,61 @@ describe('Staff bookings', () => {
     expect(reset.request.params.has('search')).toBe(false);
     expect(reset.request.params.has('bookingType')).toBe(false);
     reset.flush(report);
+  });
+
+  it('retries options and data independently, preserves options on refresh failure and cancels on destruction', async () => {
+    const loadedOptions = { ...options, bookingTypes: ['EXTERNAL'] };
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(url, Bookings);
+    filters().flush({}, { status: 500, statusText: 'Error' });
+    http.expectOne((req) => req.url.endsWith('/staff/bookings')).flush(report);
+    harness.detectChanges();
+    expect(page.report()).toEqual(report);
+    expect(page.optionsError()).toContain('Filter options');
+    expect(harness.routeNativeElement!.textContent).toContain('Retry filter options');
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    http.expectNone((req) => req.url.endsWith('/staff/bookings'));
+    const refreshed = filters();
+    expect(refreshed.request.params.keys()).toEqual([]);
+    refreshed.flush(loadedOptions);
+    harness.detectChanges();
+    const root = harness.routeNativeElement!;
+    expect(root.querySelector('select[aria-label="Source"] option[value="INTERNAL"]')).toBeNull();
+    expect(
+      root.querySelector('select[aria-label="Source"] option[value="EXTERNAL"]')?.textContent,
+    ).toBe('External');
+    expect(
+      root.querySelector('select[aria-label="Status"] option[value="PENDING"]')?.textContent,
+    ).toBe('Pending');
+    page.retry.next();
+    http.expectNone((req) => req.url.endsWith('/staff/booking-filters'));
+    http
+      .expectOne((req) => req.url.endsWith('/staff/bookings'))
+      .flush({}, { status: 500, statusText: 'Error' });
+    expect(page.options()).toEqual(loadedOptions);
+    expect(page.optionsError()).toBe('');
+    page.retry.next();
+    http.expectOne((req) => req.url.endsWith('/staff/bookings')).flush(report);
+    expect(page.report()).toEqual(report);
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    filters().flush({}, { status: 500, statusText: 'Error' });
+    expect(page.options()).toEqual(loadedOptions);
+    expect(page.report()).toEqual(report);
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    const pendingOptions = filters();
+    await page.setPage(2);
+    const pendingData = http.expectOne((req) => req.url.endsWith('/staff/bookings'));
+    page.openDetails(external);
+    const pendingDetail = detail('EXTERNAL');
+    harness.fixture.destroy();
+    expect(pendingOptions.cancelled).toBe(true);
+    expect(pendingData.cancelled).toBe(true);
+    expect(pendingDetail.cancelled).toBe(true);
+    page.optionsRetry.next();
+    page.retry.next();
+    http.expectNone((req) => req.url.includes('/staff/'));
   });
 });

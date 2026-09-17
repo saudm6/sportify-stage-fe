@@ -4,7 +4,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import { DashboardPage } from '../components/dashboard-page';
-import { BookingReport } from '../../shared/models/booking-report';
+import { BookingFilterOptions, BookingReport } from '../../shared/models/booking-report';
 import { ReportFilters, DatePreset, dateRange, validFilters } from '../../shared/models/report-filters';
 import { BookingReportService } from '../../shared/service/booking-report.service';
 
@@ -12,7 +12,8 @@ import { BookingReportService } from '../../shared/service/booking-report.servic
   selector: 'app-dashboard',
   imports: [DashboardPage],
   template: `<app-dashboard-page [form]="form" [applied]="applied()" [report]="report()"
-    [options]="options()" [loading]="loading()" [error]="error()" [validation]="validation()"
+    [options]="options()" [optionsLoading]="optionsLoading()" [optionsError]="optionsError()"
+    (retryOptions)="optionsRetry.next()" [loading]="loading()" [error]="error()" [validation]="validation()"
     [preset]="preset()" (applyFilters)="apply()" (resetFilters)="reset()"
     (choosePreset)="selectPreset($event)" (retry)="retry.next()" />`,
 })
@@ -20,6 +21,9 @@ export class Dashboard {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly service = inject(BookingReportService);
+  readonly optionsRetry = new Subject<void>();
+  readonly optionsLoading = signal(false);
+  readonly optionsError = signal('');
   readonly retry = new Subject<void>();
   readonly applied = signal<ReportFilters>({ ...dateRange('month'), branchPublicId: '', sportPublicId: '' });
   readonly preset = signal<DatePreset>('month');
@@ -30,12 +34,32 @@ export class Dashboard {
     sportPublicId: new FormControl('', { nonNullable: true }),
   }, { validators: control => validFilters(control.getRawValue()) ? null : { invalidFilters: true } });
   readonly report = signal<BookingReport | null>(null);
-  readonly options = signal<BookingReport['availableFilters']>({ branches: [], sports: [], courts: [], statuses: [] });
+  readonly options = signal<BookingFilterOptions>({ branches: [], sports: [], courts: [], statuses: [], bookingTypes: [] });
   readonly loading = signal(false);
   readonly error = signal('');
   readonly validation = signal('');
 
   constructor() {
+    this.optionsRetry
+      .pipe(
+        startWith(undefined),
+        switchMap(() => {
+          this.optionsLoading.set(true);
+          this.optionsError.set('');
+          return this.service.getFilters().pipe(
+            map((options) => ({ options, error: '' })),
+            catchError(() =>
+              of({ options: null, error: 'Filter options could not be loaded. Try again.' }),
+            ),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((result) => {
+        this.optionsLoading.set(false);
+        this.optionsError.set(result.error);
+        if (result.options) this.options.set(result.options);
+      });
     this.route.queryParamMap.pipe(
       switchMap(params => {
         const defaults = dateRange('month');
@@ -78,7 +102,6 @@ export class Dashboard {
       if (!result) return;
       this.report.set(result.report);
       this.error.set(result.error);
-      if (result.report) this.options.set(result.report.availableFilters);
     });
   }
 

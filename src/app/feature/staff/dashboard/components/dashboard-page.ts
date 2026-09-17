@@ -3,7 +3,7 @@ import { Component, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PAGE_PATHS } from '../../../../core/urls';
-import { BookingReport } from '../../shared/models/booking-report';
+import { BookingFilterOptions, BookingReport } from '../../shared/models/booking-report';
 import { ReportFilters, DatePreset } from '../../shared/models/report-filters';
 
 @Component({
@@ -17,7 +17,10 @@ export class DashboardPage {
   readonly form = input.required<FormGroup<{ [K in keyof ReportFilters]: FormControl<string> }>>();
   readonly applied = input.required<ReportFilters>();
   readonly report = input<BookingReport | null>(null);
-  readonly options = input.required<BookingReport['availableFilters']>();
+  readonly options = input.required<BookingFilterOptions>();
+  readonly optionsLoading = input(false);
+  readonly optionsError = input('');
+  readonly retryOptions = output();
   readonly loading = input(false);
   readonly error = input('');
   readonly validation = input('');

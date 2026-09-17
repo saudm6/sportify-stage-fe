@@ -12,7 +12,9 @@ export interface BookingSummary {
 
 export interface BookingBreakdown extends NamedReference, BookingSummary {}
 
-export interface BookingReport extends BookingList {
+export interface BookingReport {
+  from: string;
+  to: string;
   summary: BookingSummary;
   byBranch: BookingBreakdown[];
   bySport: BookingBreakdown[];
@@ -23,11 +25,14 @@ export interface BookingList {
   to: string;
   entries: BookingReportEntry[];
   pagination: Pagination;
-  availableFilters: {
-    branches: NamedReference[]; sports: NamedReference[];
-    courts: (NamedReference & { branchPublicId: string; sportPublicId: string })[];
-    statuses: BookingStatus[];
-  };
+}
+
+export interface BookingFilterOptions {
+  branches: NamedReference[];
+  sports: NamedReference[];
+  courts: (NamedReference & { branchPublicId: string; sportPublicId: string })[];
+  statuses: BookingStatus[];
+  bookingTypes: BookingType[];
 }
 
 export type BookingType = 'INTERNAL' | 'EXTERNAL';
