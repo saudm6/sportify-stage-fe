@@ -6,7 +6,7 @@ import {
   BookingList,
   BookingReportEntry,
 } from '../../shared/models/booking-report';
-import { BookingDetailFocus } from '../accessibility/booking-detail-focus';
+import { BookingDetailFocus } from '../keyboard/booking-details';
 import { BookingDetails, BookingIdentity, BookingsForm, BookingsQuery } from '../models/bookings';
 import { BookingDatePipe } from '../formatters/booking-date';
 import { RecordedValuePipe, ReferenceNamePipe } from '../formatters/booking-display';
