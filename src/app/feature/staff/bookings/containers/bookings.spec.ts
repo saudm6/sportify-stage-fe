@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BookingReportEntry } from '../../shared/models/booking-report';
-import { dateRange } from '../../shared/models/report-filters';
+import { dateRange } from '../../shared/utils/report-filters';
 import { BookingDetails } from '../models/bookings';
 import { Bookings } from './bookings';
 
@@ -134,6 +134,65 @@ describe('Staff bookings', () => {
     expect(field('Cancelled at')).toBe('Not recorded');
     expect(field('Cancelled by')).toBe('Unavailable for external bookings');
     expect(root.textContent).not.toMatch(/unpaid/i);
+  });
+
+  it('renders equivalent zoned and unzoned timestamps in Muscat and handles invalid dates', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url, Bookings);
+    const timestamps = [
+      '2026-09-30T21:30:00Z',
+      '2026-10-01T01:30:00+04:00',
+      '2026-10-01T01:30:00',
+      '2026-10-01 01:30:00',
+      'invalid',
+    ];
+    list().flush({
+      ...report,
+      entries: timestamps.map((bookingStart, index) => ({
+        ...customer,
+        bookingPublicId: String(index),
+        bookingStart,
+      })),
+    });
+    harness.detectChanges();
+    const cells = [...harness.routeNativeElement!.querySelectorAll('.date-cell')];
+    for (const cell of cells.slice(0, 4)) {
+      expect(cell.querySelector('strong')!.textContent).toBe('01 Oct 2026');
+      expect(cell.querySelector('small')!.textContent).toBe('01:30 am');
+    }
+    expect(cells[4].querySelector('strong')!.textContent).toBe('Not recorded');
+    expect(cells[4].querySelector('small')!.textContent).toBe('');
+  });
+
+  it('updates visible courts from URL filters, draft changes and Reset', async () => {
+    const otherId = '22222222-2222-2222-2222-222222222222';
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(`${url}&branchPublicId=${id}`, Bookings);
+    filters().flush({
+      ...options,
+      courts: [
+        options.courts[0],
+        { ...reference, publicId: 'other-sport', branchPublicId: id, sportPublicId: otherId },
+        { ...reference, publicId: 'other-branch', branchPublicId: otherId, sportPublicId: id },
+      ],
+    });
+    list().flush(report);
+    const visibleCourts = () => {
+      harness.detectChanges();
+      return [
+        ...harness.routeNativeElement!.querySelectorAll<HTMLOptionElement>(
+          'select[aria-label="Court"] option',
+        ),
+      ].map((option) => option.value);
+    };
+    expect(visibleCourts()).toEqual(['', id, 'other-sport']);
+    page.form.controls.sportPublicId.setValue(id);
+    expect(visibleCourts()).toEqual(['', id]);
+    page.form.controls.branchPublicId.setValue(otherId);
+    expect(visibleCourts()).toEqual(['', 'other-branch']);
+    await page.reset();
+    list().flush(report);
+    expect(visibleCourts()).toEqual(['', id, 'other-sport', 'other-branch']);
   });
 
   it('applies server filters once, pages with applied values, changes size and restores URL state', async () => {

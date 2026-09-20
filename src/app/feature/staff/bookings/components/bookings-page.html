@@ -45,7 +45,7 @@
         >Status<select aria-label="Status" formControlName="status">
           <option value="">All statuses</option>
           @for (item of options().statuses; track item) {
-            <option [value]="item">{{ status(item) }}</option>
+            <option [value]="item">{{ item | titlecase }}</option>
           }
         </select></label
       >
@@ -53,7 +53,7 @@
         >Source<select aria-label="Source" formControlName="bookingType">
           <option value="">All sources</option>
           @for (item of options().bookingTypes; track item) {
-            <option [value]="item">{{ item === 'INTERNAL' ? 'Internal' : 'External' }}</option>
+            <option [value]="item">{{ item | titlecase }}</option>
           }
         </select></label
       >
@@ -128,8 +128,8 @@
                 @for (row of result.entries; track row.bookingType + ':' + row.bookingPublicId) {
                   <tr [class.selected-row]="isSelected(row)">
                     <td class="date-cell">
-                      <strong>{{ date(row.bookingStart) }}</strong
-                      ><small>{{ time(row.bookingStart) }}</small>
+                      <strong>{{ row.bookingStart | bookingDate: 'date' }}</strong
+                      ><small>{{ row.bookingStart | bookingDate: 'time' }}</small>
                     </td>
                     <td>
                       <strong>{{ recorded(row.customerName) }}</strong
@@ -150,7 +150,7 @@
                             <rect x="4" y="5" width="16" height="16" rx="2"></rect>
                             <path d="M8 3v4m8-4v4M4 11h16m-11 4h6"></path>
                           }</svg
-                        >{{ source(row) }}</span
+                        >{{ row.bookingType | titlecase }}</span
                       >
                     </td>
                     <td>
@@ -158,7 +158,7 @@
                         class="chip"
                         [class.confirmed]="row.status === 'CONFIRMED'"
                         [class.cancelled]="row.status === 'CANCELLED'"
-                        >{{ status(row.status) }}</span
+                        >{{ row.status | titlecase }}</span
                       >
                     </td>
                     <td class="amount">{{ row.amount | number: '1.3-3' }}</td>
@@ -167,7 +167,10 @@
                         class="view"
                         (click)="open(row, $event)"
                         [attr.aria-label]="
-                          'View details for ' + source(row) + ' booking ' + row.bookingPublicId
+                          'View details for ' +
+                          (row.bookingType | titlecase) +
+                          ' booking ' +
+                          row.bookingPublicId
                         "
                         [attr.aria-expanded]="isSelected(row)"
                         aria-controls="booking-detail"
@@ -205,7 +208,11 @@
         }
         <footer class="pagination">
           <label
-            >Rows per page<select [value]="applied().pageSize" (change)="pageSize($event)">
+            >Rows per page<select
+              #pageSizeSelect
+              [value]="applied().pageSize"
+              (change)="changePageSize.emit(+pageSizeSelect.value)"
+            >
               <option value="20">20</option>
               <option value="50">50</option>
               <option value="100">100</option>
@@ -257,7 +264,7 @@
               class="chip"
               [class.confirmed]="booking.status === 'CONFIRMED'"
               [class.cancelled]="booking.status === 'CANCELLED'"
-              >{{ status(booking.status) }}</span
+              >{{ booking.status | titlecase }}</span
             >
             <p>
               {{ name(booking.court) }}<br />{{ name(booking.branch) }} / {{ name(booking.sport) }}
@@ -265,19 +272,19 @@
           </div>
           <dl>
             <dt>Source</dt>
-            <dd>{{ source(booking) }}</dd>
+            <dd>{{ booking.bookingType | titlecase }}</dd>
             <dt>Booking reference</dt>
             <dd>{{ booking.bookingPublicId }}</dd>
             <dt>Start</dt>
-            <dd>{{ dateTime(booking.bookingStart) }}</dd>
+            <dd>{{ booking.bookingStart | bookingDate }}</dd>
             <dt>End</dt>
-            <dd>{{ dateTime(booking.bookingEnd) }}</dd>
+            <dd>{{ booking.bookingEnd | bookingDate }}</dd>
             <dt>Duration</dt>
             <dd>{{ booking.durationMinutes | number: '1.0-2' }} minutes</dd>
             <dt>Amount</dt>
             <dd>{{ booking.amount | number: '1.3-3' }} OMR</dd>
             <dt>Recorded at</dt>
-            <dd>{{ dateTime(booking.recordedAt) }}</dd>
+            <dd>{{ booking.recordedAt | bookingDate }}</dd>
             <dt>Transaction reference</dt>
             <dd>
               {{
@@ -299,7 +306,9 @@
             <dt>Cancelled at</dt>
             <dd>
               {{
-                booking.status === 'CANCELLED' ? dateTime(booking.cancelledAt) : 'Not applicable'
+                booking.status === 'CANCELLED'
+                  ? (booking.cancelledAt | bookingDate)
+                  : 'Not applicable'
               }}
             </dd>
             <dt>Cancelled by</dt>

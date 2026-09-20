@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, TitleCasePipe } from '@angular/common';
 import {
   afterRenderEffect,
   Component,
@@ -16,10 +16,11 @@ import {
   NamedReference,
 } from '../../shared/models/booking-report';
 import { BookingDetails, BookingIdentity, BookingsForm, BookingsQuery } from '../models/bookings';
+import { BookingDatePipe } from '../pipes/booking-date';
 
 @Component({
   selector: 'app-bookings-page',
-  imports: [DecimalPipe, ReactiveFormsModule],
+  imports: [DecimalPipe, TitleCasePipe, BookingDatePipe, ReactiveFormsModule],
   templateUrl: './bookings-page.html',
   styleUrl: './bookings-page.css',
 })
@@ -28,6 +29,7 @@ export class BookingsPage {
   readonly applied = input.required<BookingsQuery>();
   readonly report = input<BookingList | null>(null);
   readonly options = input.required<BookingFilterOptions>();
+  readonly courts = input.required<BookingFilterOptions['courts']>();
   readonly optionsLoading = input(false);
   readonly optionsError = input('');
   readonly retryOptions = output();
@@ -50,18 +52,6 @@ export class BookingsPage {
   readonly listHeading = viewChild<ElementRef<HTMLElement>>('listHeading');
   private trigger: HTMLElement | null = null;
   private focusedIdentity = '';
-  private readonly dateFormat = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Muscat',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-  private readonly timeFormat = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Muscat',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
 
   constructor() {
     afterRenderEffect(() => {
@@ -75,28 +65,11 @@ export class BookingsPage {
     });
   }
 
-  courts() {
-    const { branchPublicId, sportPublicId } = this.form().getRawValue();
-    return this.options().courts.filter(
-      (court) =>
-        (!branchPublicId || court.branchPublicId === branchPublicId) &&
-        (!sportPublicId || court.sportPublicId === sportPublicId),
-    );
-  }
   name(value: NamedReference): string {
     return value.nameEn?.trim() || value.nameAr?.trim() || 'Not recorded';
   }
   recorded(value: string | null): string {
     return value?.trim() || 'Not recorded';
-  }
-  source(row: BookingReportEntry): string {
-    return row.bookingType === 'INTERNAL' ? 'Internal' : 'External';
-  }
-  status(value: string): string {
-    return value
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
   isSelected(row: BookingReportEntry): boolean {
     return (
@@ -110,25 +83,5 @@ export class BookingsPage {
   }
   @HostListener('keydown.escape') escape(): void {
     if (this.selected()) this.closeDetails.emit();
-  }
-  pageSize(event: Event): void {
-    this.changePageSize.emit(Number((event.target as HTMLSelectElement).value));
-  }
-  date(value: string): string {
-    const date = this.timestamp(value);
-    return date ? this.dateFormat.format(date) : 'Not recorded';
-  }
-  time(value: string): string {
-    const date = this.timestamp(value);
-    return date ? this.timeFormat.format(date) : '';
-  }
-  dateTime(value: string | null): string {
-    return value ? `${this.date(value)} · ${this.time(value)}` : 'Not recorded';
-  }
-  private timestamp(value: string): Date | null {
-    const date = new Date(
-      /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value.replace(' ', 'T')}+04:00`,
-    );
-    return Number.isNaN(date.getTime()) ? null : date;
   }
 }

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import {
   BookingFilterOptions,
@@ -10,7 +10,7 @@ import {
   BookingReportEntry,
 } from '../../shared/models/booking-report';
 import { StaffBookingsApi } from '../../shared/service/staff-bookings-api';
-import { dateRange } from '../../shared/models/report-filters';
+import { dateRange } from '../../shared/utils/report-filters';
 
 import { BookingsPage } from '../components/bookings-page';
 import {
@@ -19,8 +19,8 @@ import {
   BookingsFilters,
   BookingsForm,
   BookingsQuery,
-  validBookingsFilters,
 } from '../models/bookings';
+import { validBookingsFilters } from '../utils/bookings-filters';
 
 const defaults = (): BookingsQuery => ({
   ...dateRange('month'),
@@ -34,6 +34,27 @@ const defaults = (): BookingsQuery => ({
   pageSize: 20,
 });
 const validationMessage = 'Choose valid filters, dates and pagination, then Apply.';
+function queryFromParams(params: ParamMap): BookingsQuery {
+  const query = defaults();
+  for (const key of [
+    'from',
+    'to',
+    'branchPublicId',
+    'sportPublicId',
+    'courtPublicId',
+    'status',
+    'bookingType',
+    'search',
+  ] as const) {
+    query[key] = params.get(key) ?? query[key];
+  }
+  const page = params.get('page');
+  const size = params.get('pageSize');
+  query.page = page === null ? 1 : /^\d+$/.test(page) ? Number(page) : NaN;
+  query.pageSize = size === null ? 20 : /^\d+$/.test(size) ? Number(size) : NaN;
+  return query;
+}
+
 function requestError(error: HttpErrorResponse, detail = false): string {
   if (error.status === 403) return 'Access denied.';
   if (detail && error.status === 404) return 'Booking no longer available.';
@@ -51,6 +72,7 @@ function requestError(error: HttpErrorResponse, detail = false): string {
     [applied]="applied()"
     [report]="report()"
     [options]="options()"
+    [courts]="courts()"
     [optionsLoading]="optionsLoading()"
     [optionsError]="optionsError()"
     (retryOptions)="optionsRetry.next()"
@@ -116,6 +138,13 @@ export class Bookings {
   readonly detailError = signal('');
 
   constructor() {
+    this.initializeFilterOptions();
+    this.initializeDetails();
+    this.initializeList();
+    this.initializeCourtSelection();
+  }
+
+  private initializeFilterOptions() {
     this.optionsRetry
       .pipe(
         startWith(undefined),
@@ -135,22 +164,13 @@ export class Bookings {
         this.optionsLoading.set(false);
         this.optionsError.set(result.error);
         if (result.options) {
-          const options = result.options;
-          this.options.set(options);
-          for (const [key, values] of [
-            ['branchPublicId', options.branches.map((item) => item.publicId)],
-            ['sportPublicId', options.sports.map((item) => item.publicId)],
-            ['courtPublicId', options.courts.map((item) => item.publicId)],
-            ['status', options.statuses],
-            ['bookingType', options.bookingTypes],
-          ] as const) {
-            const control = this.form.controls[key];
-            if (control.value && !values.some((value) => value === control.value))
-              control.setValue('', { emitEvent: false });
-          }
-          this.clearIncompatibleCourt();
+          this.options.set(result.options);
+          this.reconcileSelections(result.options);
         }
       });
+  }
+
+  private initializeDetails() {
     this.selection
       .pipe(
         switchMap((identity) =>
@@ -178,26 +198,13 @@ export class Bookings {
           this.detailError.set(result.error);
         }
       });
+  }
+
+  private initializeList() {
     this.route.queryParamMap
       .pipe(
         switchMap((params) => {
-          const query = defaults();
-          for (const key of [
-            'from',
-            'to',
-            'branchPublicId',
-            'sportPublicId',
-            'courtPublicId',
-            'status',
-            'bookingType',
-            'search',
-          ] as const) {
-            query[key] = params.get(key) ?? query[key];
-          }
-          const page = params.get('page');
-          const size = params.get('pageSize');
-          query.page = page === null ? 1 : /^\d+$/.test(page) ? Number(page) : NaN;
-          query.pageSize = size === null ? 20 : /^\d+$/.test(size) ? Number(size) : NaN;
+          const query = queryFromParams(params);
           this.applied.set(query);
           const { page: ignoredPage, pageSize: ignoredSize, ...filters } = query;
           this.form.setValue(filters, { emitEvent: false });
@@ -244,11 +251,38 @@ export class Bookings {
           this.error.set(result.error);
         }
       });
+  }
+
+  private initializeCourtSelection() {
     for (const control of [this.form.controls.branchPublicId, this.form.controls.sportPublicId]) {
       control.valueChanges
         .pipe(takeUntilDestroyed())
         .subscribe(() => this.clearIncompatibleCourt());
     }
+  }
+
+  private reconcileSelections(options: BookingFilterOptions) {
+    for (const [key, values] of [
+      ['branchPublicId', options.branches.map((item) => item.publicId)],
+      ['sportPublicId', options.sports.map((item) => item.publicId)],
+      ['courtPublicId', options.courts.map((item) => item.publicId)],
+      ['status', options.statuses],
+      ['bookingType', options.bookingTypes],
+    ] as const) {
+      const control = this.form.controls[key];
+      if (control.value && !values.some((value) => value === control.value))
+        control.setValue('', { emitEvent: false });
+    }
+    this.clearIncompatibleCourt();
+  }
+
+  courts() {
+    const { branchPublicId, sportPublicId } = this.form.getRawValue();
+    return this.options().courts.filter(
+      (court) =>
+        (!branchPublicId || court.branchPublicId === branchPublicId) &&
+        (!sportPublicId || court.sportPublicId === sportPublicId),
+    );
   }
 
   private clearIncompatibleCourt() {
