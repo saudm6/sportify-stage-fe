@@ -6,7 +6,7 @@ import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import { DashboardPage } from '../components/dashboard-page';
 import { BookingFilterOptions, BookingReport } from '../../shared/models/booking-report';
 import { ReportFilters, DatePreset } from '../../shared/models/report-filters';
-import { dateRange, validFilters } from '../../shared/utils/report-filters';
+import { dateRange, validFilters } from '../../shared/functions/report-filters';
 import { StaffBookingsApi } from '../../shared/service/staff-bookings-api';
 
 @Component({

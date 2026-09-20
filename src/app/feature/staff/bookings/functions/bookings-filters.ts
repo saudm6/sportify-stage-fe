@@ -1,4 +1,4 @@
-import { validFilters, validId } from '../../shared/utils/report-filters';
+import { validFilters, validId } from '../../shared/functions/report-filters';
 import { BookingsFilters } from '../models/bookings';
 
 export function validBookingsFilters(filters: BookingsFilters): boolean {

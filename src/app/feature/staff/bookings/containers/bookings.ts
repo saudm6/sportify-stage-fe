@@ -19,8 +19,8 @@ import {
   BookingsForm,
   BookingsQuery,
 } from '../models/bookings';
-import { validBookingsFilters } from '../utils/bookings-filters';
-import { defaultBookingsQuery, queryFromParams } from '../utils/bookings-query';
+import { validBookingsFilters } from '../functions/bookings-filters';
+import { defaultBookingsQuery, queryFromParams } from '../functions/bookings-query';
 
 const validationMessage = 'Choose valid filters, dates and pagination, then Apply.';
 

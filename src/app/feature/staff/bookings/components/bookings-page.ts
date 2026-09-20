@@ -16,7 +16,7 @@ import {
   NamedReference,
 } from '../../shared/models/booking-report';
 import { BookingDetails, BookingIdentity, BookingsForm, BookingsQuery } from '../models/bookings';
-import { BookingDatePipe } from '../formatting/booking-date';
+import { BookingDatePipe } from '../formatters/booking-date';
 
 @Component({
   selector: 'app-bookings-page',

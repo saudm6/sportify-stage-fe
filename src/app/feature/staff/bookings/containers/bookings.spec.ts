@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BookingReportEntry } from '../../shared/models/booking-report';
-import { dateRange } from '../../shared/utils/report-filters';
+import { dateRange } from '../../shared/functions/report-filters';
 import { BookingDetails } from '../models/bookings';
 import { Bookings } from './bookings';
 

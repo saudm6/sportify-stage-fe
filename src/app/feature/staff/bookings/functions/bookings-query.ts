@@ -1,5 +1,5 @@
 import { ParamMap } from '@angular/router';
-import { dateRange } from '../../shared/utils/report-filters';
+import { dateRange } from '../../shared/functions/report-filters';
 import { BookingsQuery } from '../models/bookings';
 
 export const defaultBookingsQuery = (): BookingsQuery => ({
