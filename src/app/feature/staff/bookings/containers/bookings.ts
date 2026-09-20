@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
-import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import {
   BookingFilterOptions,
@@ -10,7 +10,6 @@ import {
   BookingReportEntry,
 } from '../../shared/models/booking-report';
 import { StaffBookingsApi } from '../../shared/service/staff-bookings-api';
-import { dateRange } from '../../shared/utils/report-filters';
 
 import { BookingsPage } from '../components/bookings-page';
 import {
@@ -21,39 +20,9 @@ import {
   BookingsQuery,
 } from '../models/bookings';
 import { validBookingsFilters } from '../utils/bookings-filters';
+import { defaultBookingsQuery, queryFromParams } from '../utils/bookings-query';
 
-const defaults = (): BookingsQuery => ({
-  ...dateRange('month'),
-  branchPublicId: '',
-  sportPublicId: '',
-  courtPublicId: '',
-  status: '',
-  bookingType: '',
-  search: '',
-  page: 1,
-  pageSize: 20,
-});
 const validationMessage = 'Choose valid filters, dates and pagination, then Apply.';
-function queryFromParams(params: ParamMap): BookingsQuery {
-  const query = defaults();
-  for (const key of [
-    'from',
-    'to',
-    'branchPublicId',
-    'sportPublicId',
-    'courtPublicId',
-    'status',
-    'bookingType',
-    'search',
-  ] as const) {
-    query[key] = params.get(key) ?? query[key];
-  }
-  const page = params.get('page');
-  const size = params.get('pageSize');
-  query.page = page === null ? 1 : /^\d+$/.test(page) ? Number(page) : NaN;
-  query.pageSize = size === null ? 20 : /^\d+$/.test(size) ? Number(size) : NaN;
-  return query;
-}
 
 function requestError(error: HttpErrorResponse, detail = false): string {
   if (error.status === 403) return 'Access denied.';
@@ -104,7 +73,7 @@ export class Bookings {
   readonly retry = new Subject<void>();
   readonly detailRetry = new Subject<void>();
   private readonly selection = new Subject<BookingIdentity | null>();
-  readonly applied = signal<BookingsQuery>(defaults());
+  readonly applied = signal<BookingsQuery>(defaultBookingsQuery());
   readonly form: BookingsForm = new FormGroup(
     {
       from: new FormControl('', { nonNullable: true }),
@@ -320,7 +289,7 @@ export class Bookings {
     });
   }
   reset() {
-    const query = defaults();
+    const query = defaultBookingsQuery();
     const { page, pageSize, ...filters } = query;
     this.form.setValue(filters, { emitEvent: false });
     return this.navigate(query);
