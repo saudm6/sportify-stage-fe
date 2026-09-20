@@ -1,4 +1,4 @@
-<main>
+<main [bookingDetailFocus]="selected()" (dismissDetails)="closeDetails.emit()">
   <header class="page-heading">
     <div>
       <h1>Bookings</h1>
@@ -21,7 +21,7 @@
         >Branch<select aria-label="Branch" formControlName="branchPublicId">
           <option value="">All branches</option>
           @for (item of options().branches; track item.publicId) {
-            <option [value]="item.publicId">{{ name(item) }}</option>
+            <option [value]="item.publicId">{{ item | referenceName }}</option>
           }
         </select></label
       >
@@ -29,7 +29,7 @@
         >Sport<select aria-label="Sport" formControlName="sportPublicId">
           <option value="">All sports</option>
           @for (item of options().sports; track item.publicId) {
-            <option [value]="item.publicId">{{ name(item) }}</option>
+            <option [value]="item.publicId">{{ item | referenceName }}</option>
           }
         </select></label
       >
@@ -37,7 +37,7 @@
         >Court<select aria-label="Court" formControlName="courtPublicId">
           <option value="">All courts</option>
           @for (item of courts(); track item.publicId) {
-            <option [value]="item.publicId">{{ name(item) }}</option>
+            <option [value]="item.publicId">{{ item | referenceName }}</option>
           }
         </select></label
       >
@@ -89,7 +89,7 @@
     <section class="results" aria-labelledby="list-heading" [attr.aria-busy]="loading()">
       <div class="results-heading">
         <div>
-          <h2 id="list-heading" #listHeading tabindex="-1">Booking records</h2>
+          <h2 id="list-heading" tabindex="-1">Booking records</h2>
           <p>{{ applied().from }} to {{ applied().to }}</p>
         </div>
         @if (report(); as result) {
@@ -126,20 +126,23 @@
               </thead>
               <tbody>
                 @for (row of result.entries; track row.bookingType + ':' + row.bookingPublicId) {
-                  <tr [class.selected-row]="isSelected(row)">
+                  @let rowSelected =
+                    selected()?.bookingType === row.bookingType &&
+                    selected()?.bookingPublicId === row.bookingPublicId;
+                  <tr [class.selected-row]="rowSelected">
                     <td class="date-cell">
                       <strong>{{ row.bookingStart | bookingDate: 'date' }}</strong
                       ><small>{{ row.bookingStart | bookingDate: 'time' }}</small>
                     </td>
                     <td>
-                      <strong>{{ recorded(row.customerName) }}</strong
+                      <strong>{{ row.customerName | recordedValue }}</strong
                       ><small class="reference">{{ row.bookingPublicId }}</small>
                     </td>
                     <td>
-                      <strong>{{ name(row.court) }}</strong
-                      ><small>{{ name(row.branch) }}</small>
+                      <strong>{{ row.court | referenceName }}</strong
+                      ><small>{{ row.branch | referenceName }}</small>
                     </td>
-                    <td>{{ name(row.sport) }}</td>
+                    <td>{{ row.sport | referenceName }}</td>
                     <td>
                       <span class="source"
                         ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -165,14 +168,14 @@
                     <td>
                       <button
                         class="view"
-                        (click)="open(row, $event)"
+                        (click)="viewDetails.emit(row)"
                         [attr.aria-label]="
                           'View details for ' +
                           (row.bookingType | titlecase) +
                           ' booking ' +
                           row.bookingPublicId
                         "
-                        [attr.aria-expanded]="isSelected(row)"
+                        [attr.aria-expanded]="rowSelected"
                         aria-controls="booking-detail"
                       >
                         View details
@@ -243,7 +246,7 @@
         [attr.aria-busy]="detailLoading()"
       >
         <header class="detail-header">
-          <h2 id="detail-heading" #detailHeading tabindex="-1">Booking details</h2>
+          <h2 id="detail-heading" tabindex="-1">Booking details</h2>
           <button (click)="closeDetails.emit()" aria-label="Close booking details">Close</button>
         </header>
         @if (detailLoading()) {
@@ -259,7 +262,7 @@
           </div>
         } @else if (detail(); as booking) {
           <div class="detail-title">
-            <h3>{{ recorded(booking.customerName) }}</h3>
+            <h3>{{ booking.customerName | recordedValue }}</h3>
             <span
               class="chip"
               [class.confirmed]="booking.status === 'CONFIRMED'"
@@ -267,7 +270,8 @@
               >{{ booking.status | titlecase }}</span
             >
             <p>
-              {{ name(booking.court) }}<br />{{ name(booking.branch) }} / {{ name(booking.sport) }}
+              {{ booking.court | referenceName }}<br />{{ booking.branch | referenceName }} /
+              {{ booking.sport | referenceName }}
             </p>
           </div>
           <dl>
@@ -290,17 +294,17 @@
               {{
                 booking.bookingType === 'EXTERNAL'
                   ? 'Not applicable'
-                  : recorded(booking.transactionReference)
+                  : (booking.transactionReference | recordedValue)
               }}
             </dd>
             <dt>Customer contact</dt>
-            <dd>{{ recorded(booking.customerContact) }}</dd>
+            <dd>{{ booking.customerContact | recordedValue }}</dd>
             <dt>External notes</dt>
             <dd class="notes">
               {{
                 booking.bookingType === 'INTERNAL'
                   ? 'Not applicable'
-                  : recorded(booking.externalNotes)
+                  : (booking.externalNotes | recordedValue)
               }}
             </dd>
             <dt>Cancelled at</dt>
@@ -318,7 +322,7 @@
                   ? 'Not applicable'
                   : booking.bookingType === 'EXTERNAL'
                     ? 'Unavailable for external bookings'
-                    : recorded(booking.cancelledByName)
+                    : (booking.cancelledByName | recordedValue)
               }}
             </dd>
           </dl>

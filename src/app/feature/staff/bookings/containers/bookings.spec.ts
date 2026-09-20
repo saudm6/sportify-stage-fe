@@ -115,6 +115,9 @@ describe('Staff bookings', () => {
     buttons[0].click();
     detail('INTERNAL').flush(details(customer));
     harness.detectChanges();
+    expect(buttons[0].getAttribute('aria-expanded')).toBe('true');
+    expect(buttons[1].getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector('tr.selected-row')?.contains(buttons[0])).toBe(true);
     expect(field('Transaction reference')).toBe('Not recorded');
     expect(field('Customer contact')).toBe('Not recorded');
     expect(field('External notes')).toBe('Not applicable');
@@ -128,12 +131,37 @@ describe('Staff bookings', () => {
       externalNotes: 'Bring rackets',
     });
     harness.detectChanges();
+    expect(document.activeElement).toBe(root.querySelector('#detail-heading'));
+    expect(buttons[0].getAttribute('aria-expanded')).toBe('false');
+    expect(buttons[1].getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('tr.selected-row')?.contains(buttons[1])).toBe(true);
     expect(field('Transaction reference')).toBe('Not applicable');
     expect(field('Customer contact')).toBe('91234567');
     expect(field('External notes')).toBe('Bring rackets');
     expect(field('Cancelled at')).toBe('Not recorded');
     expect(field('Cancelled by')).toBe('Unavailable for external bookings');
     expect(root.textContent).not.toMatch(/unpaid/i);
+  });
+
+  it('uses Arabic names and missing-value labels when displayed text is blank', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url, Bookings);
+    list().flush({
+      ...report,
+      entries: [
+        {
+          ...customer,
+          customerName: '  ',
+          court: { ...reference, nameEn: '  ', nameAr: ' ملعب ' },
+          branch: { ...reference, nameEn: '', nameAr: '' },
+        },
+      ],
+    });
+    harness.detectChanges();
+    const cells = harness.routeNativeElement!.querySelectorAll('tbody tr td');
+    expect(cells[1].querySelector('strong')!.textContent).toBe('Not recorded');
+    expect(cells[2].querySelector('strong')!.textContent).toBe('ملعب');
+    expect(cells[2].querySelector('small')!.textContent).toBe('Not recorded');
   });
 
   it('renders equivalent zoned and unzoned timestamps in Muscat and handles invalid dates', async () => {
