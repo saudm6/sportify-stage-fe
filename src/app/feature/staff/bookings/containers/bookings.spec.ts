@@ -182,6 +182,120 @@ describe('Staff bookings', () => {
     expect(page.form.controls.courtPublicId.value).toBe('');
   });
 
+  it('reconciles refreshed selections before Apply while preserving available filters', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(url, Bookings);
+    list().flush(report);
+    const selections = {
+      branchPublicId: id,
+      sportPublicId: id,
+      courtPublicId: id,
+      status: 'CONFIRMED',
+      bookingType: 'INTERNAL',
+      search: 'Alice',
+    };
+    page.form.patchValue(selections);
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    filters().flush(options);
+    expect(page.form.getRawValue()).toMatchObject(selections);
+
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    filters().flush({}, { status: 500, statusText: 'Error' });
+    expect(page.form.getRawValue()).toMatchObject(selections);
+
+    page.optionsRetry.next();
+    expectedOptionsRequests++;
+    filters().flush({ branches: [], sports: [], courts: [], statuses: [], bookingTypes: [] });
+    harness.detectChanges();
+    http.expectNone((req) => req.url.endsWith('/staff/bookings'));
+    const cleared = {
+      branchPublicId: '',
+      sportPublicId: '',
+      courtPublicId: '',
+      status: '',
+      bookingType: '',
+    };
+    expect(page.form.getRawValue()).toMatchObject({ ...cleared, search: 'Alice' });
+    for (const label of ['Branch', 'Sport', 'Court', 'Status', 'Source']) {
+      const select = harness.routeNativeElement!.querySelector<HTMLSelectElement>(
+        `select[aria-label="${label}"]`,
+      )!;
+      expect(select.value).toBe('');
+      expect(select.selectedIndex).toBe(0);
+    }
+    await page.apply();
+    const applied = list();
+    for (const key of Object.keys(cleared)) expect(applied.request.params.has(key)).toBe(false);
+    expect(applied.request.params.get('search')).toBe('Alice');
+    applied.flush(report);
+  });
+
+  it.each(['branchPublicId', 'sportPublicId'] as const)(
+    'clears a court whose refreshed %s no longer matches the selection',
+    async (key) => {
+      const harness = await RouterTestingHarness.create();
+      const page = await harness.navigateByUrl(url, Bookings);
+      list().flush(report);
+      page.form.patchValue({ branchPublicId: id, sportPublicId: id, courtPublicId: id });
+      page.optionsRetry.next();
+      expectedOptionsRequests++;
+      filters().flush({
+        ...options,
+        courts: [{ ...options.courts[0], [key]: '22222222-2222-2222-2222-222222222222' }],
+      });
+      expect(page.form.controls.courtPublicId.value).toBe('');
+      await page.apply();
+      const applied = list();
+      expect(applied.request.params.has('courtPublicId')).toBe(false);
+      expect(applied.request.params.get(key)).toBe(id);
+      applied.flush(report);
+    },
+  );
+
+  it('focuses details on open and restores focus on Close, Escape and list navigation', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(url, Bookings);
+    list().flush(report);
+    harness.detectChanges();
+    const root = harness.routeNativeElement!;
+    const buttons = root.querySelectorAll<HTMLButtonElement>('button.view');
+
+    buttons[0].focus();
+    buttons[0].click();
+    harness.detectChanges();
+    expect(document.activeElement).toBe(root.querySelector('#detail-heading'));
+    detail('INTERNAL').flush(details(customer));
+    harness.detectChanges();
+    root.querySelector<HTMLButtonElement>('button[aria-label="Close booking details"]')!.click();
+    harness.detectChanges();
+    expect(root.querySelector('#booking-detail')).toBeNull();
+    expect(document.activeElement).toBe(buttons[0]);
+
+    buttons[1].focus();
+    buttons[1].click();
+    detail('EXTERNAL').flush(details(external));
+    harness.detectChanges();
+    expect(document.activeElement).toBe(root.querySelector('#detail-heading'));
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    harness.detectChanges();
+    expect(root.querySelector('#booking-detail')).toBeNull();
+    expect(document.activeElement).toBe(buttons[1]);
+
+    buttons[0].click();
+    detail('INTERNAL').flush(details(customer));
+    harness.detectChanges();
+    expect(document.activeElement).toBe(root.querySelector('#detail-heading'));
+    await page.setPage(2);
+    harness.detectChanges();
+    expect(buttons[0].isConnected).toBe(false);
+    expect(document.activeElement).toBe(root.querySelector('#list-heading'));
+    list().flush(report);
+  });
+
   it('cancels stale list and detail requests, closes on navigation, and retries failures without stale records', async () => {
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl(url, Bookings);

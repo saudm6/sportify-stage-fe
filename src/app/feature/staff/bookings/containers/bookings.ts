@@ -134,7 +134,22 @@ export class Bookings {
       .subscribe((result) => {
         this.optionsLoading.set(false);
         this.optionsError.set(result.error);
-        if (result.options) this.options.set(result.options);
+        if (result.options) {
+          const options = result.options;
+          this.options.set(options);
+          for (const [key, values] of [
+            ['branchPublicId', options.branches.map((item) => item.publicId)],
+            ['sportPublicId', options.sports.map((item) => item.publicId)],
+            ['courtPublicId', options.courts.map((item) => item.publicId)],
+            ['status', options.statuses],
+            ['bookingType', options.bookingTypes],
+          ] as const) {
+            const control = this.form.controls[key];
+            if (control.value && !values.some((value) => value === control.value))
+              control.setValue('', { emitEvent: false });
+          }
+          this.clearIncompatibleCourt();
+        }
       });
     this.selection
       .pipe(
@@ -230,17 +245,21 @@ export class Bookings {
         }
       });
     for (const control of [this.form.controls.branchPublicId, this.form.controls.sportPublicId]) {
-      control.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
-        const values = this.form.getRawValue();
-        const court = this.options().courts.find((item) => item.publicId === values.courtPublicId);
-        if (
-          court &&
-          ((values.branchPublicId && values.branchPublicId !== court.branchPublicId) ||
-            (values.sportPublicId && values.sportPublicId !== court.sportPublicId))
-        )
-          this.form.controls.courtPublicId.setValue('');
-      });
+      control.valueChanges
+        .pipe(takeUntilDestroyed())
+        .subscribe(() => this.clearIncompatibleCourt());
     }
+  }
+
+  private clearIncompatibleCourt() {
+    const values = this.form.getRawValue();
+    const court = this.options().courts.find((item) => item.publicId === values.courtPublicId);
+    if (
+      court &&
+      ((values.branchPublicId && values.branchPublicId !== court.branchPublicId) ||
+        (values.sportPublicId && values.sportPublicId !== court.sportPublicId))
+    )
+      this.form.controls.courtPublicId.setValue('');
   }
 
   private navigate(query: BookingsQuery) {
