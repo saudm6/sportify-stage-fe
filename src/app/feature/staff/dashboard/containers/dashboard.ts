@@ -6,7 +6,7 @@ import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
 import { DashboardPage } from '../components/dashboard-page';
 import { BookingFilterOptions, BookingReport } from '../../shared/models/booking-report';
 import { ReportFilters, DatePreset, dateRange, validFilters } from '../../shared/models/report-filters';
-import { BookingReportService } from '../../shared/service/booking-report.service';
+import { StaffBookingsApi } from '../../shared/service/staff-bookings-api';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,7 +20,7 @@ import { BookingReportService } from '../../shared/service/booking-report.servic
 export class Dashboard {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly service = inject(BookingReportService);
+  private readonly service = inject(StaffBookingsApi);
   readonly optionsRetry = new Subject<void>();
   readonly optionsLoading = signal(false);
   readonly optionsError = signal('');

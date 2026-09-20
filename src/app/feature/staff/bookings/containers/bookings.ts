@@ -9,7 +9,7 @@ import {
   BookingList,
   BookingReportEntry,
 } from '../../shared/models/booking-report';
-import { BookingReportService } from '../../shared/service/booking-report.service';
+import { StaffBookingsApi } from '../../shared/service/staff-bookings-api';
 import { dateRange } from '../../shared/models/report-filters';
 
 import { BookingsPage } from '../components/bookings-page';
@@ -21,7 +21,6 @@ import {
   BookingsQuery,
   validBookingsFilters,
 } from '../models/bookings';
-import { BookingsService } from '../service/bookings.service';
 
 const defaults = (): BookingsQuery => ({
   ...dateRange('month'),
@@ -76,8 +75,7 @@ export class Bookings {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  private readonly service = inject(BookingReportService);
-  private readonly bookings = inject(BookingsService);
+  private readonly service = inject(StaffBookingsApi);
   readonly optionsRetry = new Subject<void>();
   readonly optionsLoading = signal(false);
   readonly optionsError = signal('');
@@ -148,7 +146,7 @@ export class Bookings {
               this.detailError.set('');
               this.detailLoading.set(!!identity);
               return identity
-                ? this.bookings.getDetails(identity.bookingType, identity.bookingPublicId).pipe(
+                ? this.service.getDetails(identity.bookingType, identity.bookingPublicId).pipe(
                     map((detail) => ({ detail, error: '' })),
                     catchError((error) => of({ detail: null, error: requestError(error, true) })),
                   )
@@ -215,7 +213,7 @@ export class Bookings {
                 return of(null);
               }
               this.loading.set(true);
-              return this.bookings.getList(query).pipe(
+              return this.service.getList(query).pipe(
                 map((report) => ({ report, error: '' })),
                 catchError((error) => of({ report: null, error: requestError(error) })),
               );
