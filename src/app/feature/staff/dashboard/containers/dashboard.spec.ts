@@ -5,7 +5,7 @@ import { ApplicationRef } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Dashboard } from './dashboard';
-import { dateRange } from '../../shared/functions/report-filters';
+import { dateRange } from '../../shared/functions/dates';
 
 describe('Staff dashboard', () => {
   let http: HttpTestingController;
