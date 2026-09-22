@@ -33,7 +33,6 @@ export class BookingsPage {
   readonly courts = input.required<BookingFilterOptions['courts']>();
   readonly optionsLoading = input(false);
   readonly optionsError = input('');
-  readonly retryOptions = output();
   readonly loading = input(false);
   readonly error = input('');
   readonly validation = input('');
@@ -43,9 +42,7 @@ export class BookingsPage {
   readonly detailError = input('');
   readonly applyFilters = output();
   readonly resetFilters = output();
-  readonly retry = output();
   readonly closeDetails = output();
-  readonly retryDetails = output();
   readonly changePage = output<number>();
   readonly changePageSize = output<number>();
   readonly viewDetails = output<BookingReportEntry>();

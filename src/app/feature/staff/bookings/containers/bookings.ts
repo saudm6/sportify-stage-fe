@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, map, of, startWith, Subject, switchMap } from 'rxjs';
+import { catchError, map, merge, of, Subject, switchMap } from 'rxjs';
 import {
   BookingFilterOptions,
   BookingList,
@@ -29,8 +29,8 @@ function requestError(error: HttpErrorResponse, detail = false): string {
   if (detail && error.status === 404) return 'Booking no longer available.';
   if (error.status === 400) return 'The server rejected these filters. Check the values and Apply.';
   return detail
-    ? 'Booking details could not be loaded. Try again.'
-    : 'Bookings could not be loaded. Try again.';
+    ? 'Booking details could not be loaded. Open the booking again.'
+    : 'Bookings could not be loaded. Apply filters to try again.';
 }
 
 @Component({
@@ -44,7 +44,6 @@ function requestError(error: HttpErrorResponse, detail = false): string {
     [courts]="courts()"
     [optionsLoading]="optionsLoading()"
     [optionsError]="optionsError()"
-    (retryOptions)="optionsRetry.next()"
     [loading]="loading()"
     [error]="error()"
     [validation]="validation()"
@@ -54,12 +53,10 @@ function requestError(error: HttpErrorResponse, detail = false): string {
     [detailError]="detailError()"
     (applyFilters)="apply()"
     (resetFilters)="reset()"
-    (retry)="retry.next()"
     (changePage)="setPage($event)"
     (changePageSize)="setPageSize($event)"
     (viewDetails)="openDetails($event)"
     (closeDetails)="closeDetails()"
-    (retryDetails)="detailRetry.next()"
   />`,
 })
 export class Bookings {
@@ -67,11 +64,9 @@ export class Bookings {
   private readonly router = inject(Router);
 
   private readonly service = inject(StaffBookingsApi);
-  readonly optionsRetry = new Subject<void>();
   readonly optionsLoading = signal(false);
   readonly optionsError = signal('');
-  readonly retry = new Subject<void>();
-  readonly detailRetry = new Subject<void>();
+  private readonly listRefresh = new Subject<void>();
   private readonly selection = new Subject<BookingIdentity | null>();
   readonly applied = signal<BookingsQuery>(defaultBookingsQuery());
   readonly form: BookingsForm = new FormGroup(
@@ -107,26 +102,24 @@ export class Bookings {
   readonly detailError = signal('');
 
   constructor() {
-    this.initializeFilterOptions();
-    this.initializeDetails();
-    this.initializeList();
+    this.loadFilterOptions();
+    this.watchBookingSelection();
+    this.watchListQuery();
     this.initializeCourtSelection();
   }
 
-  private initializeFilterOptions() {
-    this.optionsRetry
+  private loadFilterOptions() {
+    this.optionsLoading.set(true);
+    this.service
+      .getFilters()
       .pipe(
-        startWith(undefined),
-        switchMap(() => {
-          this.optionsLoading.set(true);
-          this.optionsError.set('');
-          return this.service.getFilters().pipe(
-            map((options) => ({ options, error: '' })),
-            catchError(() =>
-              of({ options: null, error: 'Filter options could not be loaded. Try again.' }),
-            ),
-          );
-        }),
+        map((options) => ({ options, error: '' })),
+        catchError(() =>
+          of({
+            options: null,
+            error: 'Filter options could not be loaded. Reload the page to try again.',
+          }),
+        ),
         takeUntilDestroyed(),
       )
       .subscribe((result) => {
@@ -139,25 +132,20 @@ export class Bookings {
       });
   }
 
-  private initializeDetails() {
+  private watchBookingSelection() {
     this.selection
       .pipe(
-        switchMap((identity) =>
-          this.detailRetry.pipe(
-            startWith(undefined),
-            switchMap(() => {
-              this.detail.set(null);
-              this.detailError.set('');
-              this.detailLoading.set(!!identity);
-              return identity
-                ? this.service.getDetails(identity.bookingType, identity.bookingPublicId).pipe(
-                    map((detail) => ({ detail, error: '' })),
-                    catchError((error) => of({ detail: null, error: requestError(error, true) })),
-                  )
-                : of(null);
-            }),
-          ),
-        ),
+        switchMap((identity) => {
+          this.detail.set(null);
+          this.detailError.set('');
+          this.detailLoading.set(!!identity);
+          return identity
+            ? this.service.getDetails(identity.bookingType, identity.bookingPublicId).pipe(
+                map((detail) => ({ detail, error: '' })),
+                catchError((error) => of({ detail: null, error: requestError(error, true) })),
+              )
+            : of(null);
+        }),
         takeUntilDestroyed(),
       )
       .subscribe((result) => {
@@ -169,8 +157,11 @@ export class Bookings {
       });
   }
 
-  private initializeList() {
-    this.route.queryParamMap
+  private watchListQuery() {
+    merge(
+      this.route.queryParamMap,
+      this.listRefresh.pipe(map(() => this.route.snapshot.queryParamMap)),
+    )
       .pipe(
         switchMap((params) => {
           const query = queryFromParams(params);
@@ -178,37 +169,32 @@ export class Bookings {
           const { page: ignoredPage, pageSize: ignoredSize, ...filters } = query;
           this.form.setValue(filters, { emitEvent: false });
           this.validation.set('');
-          return this.retry.pipe(
-            startWith(undefined),
-            switchMap(() => {
-              this.closeDetails();
-              this.report.set(null);
-              this.error.set('');
-              this.loading.set(false);
-              if (
-                !validBookingsFilters(query) ||
-                !Number.isInteger(query.page) ||
-                query.page < 1 ||
-                query.page > 1000000 ||
-                ![20, 50, 100].includes(query.pageSize)
-              ) {
-                this.validation.set(validationMessage);
-                return of(null);
-              }
-              if (['from', 'to', 'page', 'pageSize'].some((key) => !params.has(key))) {
-                void this.router.navigate([], {
-                  relativeTo: this.route,
-                  queryParams: query,
-                  replaceUrl: true,
-                });
-                return of(null);
-              }
-              this.loading.set(true);
-              return this.service.getList(query).pipe(
-                map((report) => ({ report, error: '' })),
-                catchError((error) => of({ report: null, error: requestError(error) })),
-              );
-            }),
+          this.closeDetails();
+          this.report.set(null);
+          this.error.set('');
+          this.loading.set(false);
+          if (
+            !validBookingsFilters(query) ||
+            !Number.isInteger(query.page) ||
+            query.page < 1 ||
+            query.page > 1000000 ||
+            ![20, 50, 100].includes(query.pageSize)
+          ) {
+            this.validation.set(validationMessage);
+            return of(null);
+          }
+          if (['from', 'to', 'page', 'pageSize'].some((key) => !params.has(key))) {
+            void this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: query,
+              replaceUrl: true,
+            });
+            return of(null);
+          }
+          this.loading.set(true);
+          return this.service.getList(query).pipe(
+            map((report) => ({ report, error: '' })),
+            catchError((error) => of({ report: null, error: requestError(error) })),
           );
         }),
         takeUntilDestroyed(),
@@ -268,7 +254,7 @@ export class Bookings {
   private navigate(query: BookingsQuery) {
     this.validation.set('');
     if (JSON.stringify(query) === JSON.stringify(this.applied())) {
-      this.retry.next();
+      this.listRefresh.next();
       return Promise.resolve(true);
     }
     return this.router.navigate([], { relativeTo: this.route, queryParams: query });

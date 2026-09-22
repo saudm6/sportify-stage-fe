@@ -81,7 +81,6 @@
     @if (optionsError()) {
       <p class="error" role="alert">
         {{ optionsError() }}
-        <button type="button" (click)="retryOptions.emit()">Retry filter options</button>
       </p>
     }
   </form>
@@ -104,9 +103,6 @@
         <div class="state" role="alert">
           <h3>Bookings could not be loaded</h3>
           <p>{{ error() }}</p>
-          @if (error() !== 'Access denied.' && !error().startsWith('The server rejected')) {
-            <button (click)="retry.emit()">Retry</button>
-          }
         </div>
       } @else if (report(); as result) {
         @if (result.entries.length) {
@@ -254,11 +250,6 @@
         } @else if (detailError()) {
           <div role="alert">
             <p class="error">{{ detailError() }}</p>
-            @if (
-              detailError() !== 'Access denied.' && detailError() !== 'Booking no longer available.'
-            ) {
-              <button (click)="retryDetails.emit()">Retry details</button>
-            }
           </div>
         } @else if (detail(); as booking) {
           <div class="detail-title">

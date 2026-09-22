@@ -57,7 +57,6 @@ describe('Staff bookings', () => {
     cancelledByName: null,
   });
   let optionsRequests: number;
-  let expectedOptionsRequests: number;
   const filters = () => {
     optionsRequests++;
     return http.expectOne((req) => req.url.endsWith('/staff/booking-filters'));
@@ -84,12 +83,45 @@ describe('Staff bookings', () => {
     });
     http = TestBed.inject(HttpTestingController);
     optionsRequests = 0;
-    expectedOptionsRequests = 1;
   });
   afterEach(() => {
     flushOptions();
-    expect(optionsRequests).toBe(expectedOptionsRequests);
+    expect(optionsRequests).toBe(1);
     http.verify();
+  });
+
+  it('recovers through Apply and reopening details without dedicated retry buttons', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(url, Bookings);
+    filters().flush({}, { status: 500, statusText: 'Error' });
+    list().flush({}, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    const retryButtons = () =>
+      [...harness.routeNativeElement!.querySelectorAll('button')].filter((button) =>
+        /retry/i.test(button.textContent),
+      );
+    expect(retryButtons()).toHaveLength(0);
+
+    await page.apply();
+    const repeated = list();
+    expect(repeated.request.method).toBe('GET');
+    repeated.flush(report);
+    const appliedUrl = TestBed.inject(Router).url;
+    await page.apply();
+    const pending = list();
+    await page.apply();
+    expect(pending.cancelled).toBe(true);
+    list().flush(report);
+    expect(TestBed.inject(Router).url).toBe(appliedUrl);
+    http.expectNone((req) => req.url.endsWith('/staff/booking-filters'));
+
+    page.openDetails(customer);
+    detail('INTERNAL').flush({}, { status: 500, statusText: 'Error' });
+    harness.detectChanges();
+    expect(retryButtons()).toHaveLength(0);
+    page.openDetails(customer);
+    detail('INTERNAL').flush(details(customer));
+    expect(page.detail()).toEqual(details(customer));
   });
 
   it('renders composite identities and full totals, opens source-specific details and labels missing values precisely', async () => {
@@ -269,10 +301,10 @@ describe('Staff bookings', () => {
     expect(page.form.controls.courtPublicId.value).toBe('');
   });
 
-  it('reconciles refreshed selections before Apply while preserving available filters', async () => {
+  it('clears unavailable selections when options arrive while preserving search', async () => {
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl(url, Bookings);
-    list().flush(report);
+    http.expectOne((req) => req.url.endsWith('/staff/bookings')).flush(report);
     const selections = {
       branchPublicId: id,
       sportPublicId: id,
@@ -282,18 +314,6 @@ describe('Staff bookings', () => {
       search: 'Alice',
     };
     page.form.patchValue(selections);
-    page.optionsRetry.next();
-    expectedOptionsRequests++;
-    filters().flush(options);
-    expect(page.form.getRawValue()).toMatchObject(selections);
-
-    page.optionsRetry.next();
-    expectedOptionsRequests++;
-    filters().flush({}, { status: 500, statusText: 'Error' });
-    expect(page.form.getRawValue()).toMatchObject(selections);
-
-    page.optionsRetry.next();
-    expectedOptionsRequests++;
     filters().flush({ branches: [], sports: [], courts: [], statuses: [], bookingTypes: [] });
     harness.detectChanges();
     http.expectNone((req) => req.url.endsWith('/staff/bookings'));
@@ -320,14 +340,12 @@ describe('Staff bookings', () => {
   });
 
   it.each(['branchPublicId', 'sportPublicId'] as const)(
-    'clears a court whose refreshed %s no longer matches the selection',
+    'clears a court whose loaded %s does not match the selection',
     async (key) => {
       const harness = await RouterTestingHarness.create();
       const page = await harness.navigateByUrl(url, Bookings);
-      list().flush(report);
+      http.expectOne((req) => req.url.endsWith('/staff/bookings')).flush(report);
       page.form.patchValue({ branchPublicId: id, sportPublicId: id, courtPublicId: id });
-      page.optionsRetry.next();
-      expectedOptionsRequests++;
       filters().flush({
         ...options,
         courts: [{ ...options.courts[0], [key]: '22222222-2222-2222-2222-222222222222' }],
@@ -383,7 +401,7 @@ describe('Staff bookings', () => {
     list().flush(report);
   });
 
-  it('cancels stale list and detail requests, closes on navigation, and retries failures without stale records', async () => {
+  it('cancels stale requests and recovers through Apply and reopening details', async () => {
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl(url, Bookings);
     const staleList = list();
@@ -399,7 +417,7 @@ describe('Staff bookings', () => {
     expect(closedDetail.cancelled).toBe(true);
     page.openDetails(customer);
     detail('INTERNAL').flush({}, { status: 500, statusText: 'Error' });
-    page.detailRetry.next();
+    page.openDetails(customer);
     detail('INTERNAL').flush(details(customer));
     expect(page.detail()).not.toBeNull();
     page.openDetails(external);
@@ -412,8 +430,8 @@ describe('Staff bookings', () => {
     expect(harness.routeNativeElement!.querySelector('tbody')).toBeNull();
     list().flush({}, { status: 500, statusText: 'Error' });
     harness.detectChanges();
-    expect(harness.routeNativeElement!.textContent).toContain('Retry');
-    page.retry.next();
+    expect(harness.routeNativeElement!.textContent).toContain('Apply filters to try again');
+    await page.apply();
     list().flush(report);
     expect(page.report()).toEqual(report);
   });
@@ -436,13 +454,13 @@ describe('Staff bookings', () => {
       [400, 'server rejected'],
       [403, 'Access denied'],
     ] as const) {
-      page.retry.next();
+      await page.apply();
       list().flush({}, { status, statusText: 'Error' });
       harness.detectChanges();
       expect(harness.routeNativeElement!.textContent).toContain(text);
       expect(harness.routeNativeElement!.querySelector('tbody')).toBeNull();
     }
-    page.retry.next();
+    await page.apply();
     list().flush(report);
     for (const [status, text] of [
       [404, 'Booking no longer available'],
@@ -502,22 +520,14 @@ describe('Staff bookings', () => {
     reset.flush(report);
   });
 
-  it('retries options and data independently, preserves options on refresh failure and cancels on destruction', async () => {
+  it('loads options once and preserves them when a list request fails', async () => {
     const loadedOptions = { ...options, bookingTypes: ['EXTERNAL'] };
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl(url, Bookings);
-    filters().flush({}, { status: 500, statusText: 'Error' });
-    http.expectOne((req) => req.url.endsWith('/staff/bookings')).flush(report);
-    harness.detectChanges();
-    expect(page.report()).toEqual(report);
-    expect(page.optionsError()).toContain('Filter options');
-    expect(harness.routeNativeElement!.textContent).toContain('Retry filter options');
-    page.optionsRetry.next();
-    expectedOptionsRequests++;
-    http.expectNone((req) => req.url.endsWith('/staff/bookings'));
-    const refreshed = filters();
-    expect(refreshed.request.params.keys()).toEqual([]);
-    refreshed.flush(loadedOptions);
+    const initialOptions = filters();
+    expect(initialOptions.request.params.keys()).toEqual([]);
+    initialOptions.flush(loadedOptions);
+    list().flush(report);
     harness.detectChanges();
     const root = harness.routeNativeElement!;
     expect(root.querySelector('select[aria-label="Source"] option[value="INTERNAL"]')).toBeNull();
@@ -527,25 +537,24 @@ describe('Staff bookings', () => {
     expect(
       root.querySelector('select[aria-label="Status"] option[value="PENDING"]')?.textContent,
     ).toBe('Pending');
-    page.retry.next();
+    await page.apply();
     http.expectNone((req) => req.url.endsWith('/staff/booking-filters'));
     http
       .expectOne((req) => req.url.endsWith('/staff/bookings'))
       .flush({}, { status: 500, statusText: 'Error' });
     expect(page.options()).toEqual(loadedOptions);
     expect(page.optionsError()).toBe('');
-    page.retry.next();
+    await page.apply();
     http.expectOne((req) => req.url.endsWith('/staff/bookings')).flush(report);
     expect(page.report()).toEqual(report);
-    page.optionsRetry.next();
-    expectedOptionsRequests++;
-    filters().flush({}, { status: 500, statusText: 'Error' });
     expect(page.options()).toEqual(loadedOptions);
-    expect(page.report()).toEqual(report);
-    page.optionsRetry.next();
-    expectedOptionsRequests++;
+    http.expectNone((req) => req.url.endsWith('/staff/booking-filters'));
+  });
+
+  it('cancels options, list and detail requests on destruction', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(url, Bookings);
     const pendingOptions = filters();
-    await page.setPage(2);
     const pendingData = http.expectOne((req) => req.url.endsWith('/staff/bookings'));
     page.openDetails(external);
     const pendingDetail = detail('EXTERNAL');
@@ -553,8 +562,7 @@ describe('Staff bookings', () => {
     expect(pendingOptions.cancelled).toBe(true);
     expect(pendingData.cancelled).toBe(true);
     expect(pendingDetail.cancelled).toBe(true);
-    page.optionsRetry.next();
-    page.retry.next();
+    page.openDetails(customer);
     http.expectNone((req) => req.url.includes('/staff/'));
   });
 });
