@@ -1,0 +1,35 @@
+:host { display: block; font-family: 'Trebuchet MS', Arial, sans-serif; }
+.app-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100dvh; background: #f4f7fa; }
+.app-shell.collapsed { grid-template-columns: 72px minmax(0, 1fr); }
+aside { background: #22578b; color: white; padding: 16px 12px; min-width: 0; }
+.sidebar-body { display: flex; flex-direction: column; }
+.sidebar-body[hidden] { display: none; }
+button, a, summary { position: relative; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 6px; color: inherit; background: transparent; text-decoration: none; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; text-align: left; }
+button { width: 100%; }
+svg { width: 24px; height: 24px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.brand { margin-top: 20px; font-size: 25px; }
+.brand svg { color: #c3deed; }
+.area { color: #d1e2f1; font-size: 13px; margin: 12px 12px 28px; }
+nav { display: grid; gap: 6px; }
+nav a.active { background: white; color: #22578b; }
+a:hover, button:hover, summary:hover { background: #174471; color: white; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid #ffc27b; outline-offset: 2px; }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: '+'; margin-left: auto; }
+details[open] summary::after { content: '−'; }
+.profile-menu { margin-top: 16px; border-top: 1px solid #ffffff40; padding-top: 12px; }
+.profile-menu a, .profile-menu button { margin-top: 6px; }
+.sidebar-note { padding: 40px 12px 0; font-size: 12px; line-height: 1.5; color: #d1e2f1; }
+.content { min-width: 0; overflow-x: auto; }
+.collapsed .label, .collapsed .area, .collapsed .sidebar-note, .collapsed summary::after { display: none; }
+.collapsed :is(a, button, summary):is(:hover, :focus-visible) .label { display: block; position: absolute; z-index: 30; left: calc(100% + 8px); width: max-content; max-width: 220px; padding: 8px 12px; border-radius: 6px; background: #174471; color: white; font-size: 14px; box-shadow: 0 2px 8px #0003; }
+.backdrop { position: fixed; inset: 0; z-index: 40; border-radius: 0; background: #10243880; cursor: default; }
+.backdrop:hover { background: #10243880; }
+.mobile { grid-template-columns: 48px minmax(0, 1fr); }
+.mobile.collapsed { grid-template-columns: 48px minmax(0, 1fr); }
+.mobile aside { position: fixed; z-index: 50; inset: 0 auto 0 0; width: min(280px, 100vw); overflow-y: auto; }
+.mobile.collapsed aside { width: 48px; padding: 12px 2px; overflow: visible; }
+.mobile .content { grid-column: 2; }
+.app-shell.signed-out { grid-template-columns: minmax(0, 1fr); }
+.signed-out .content { grid-column: 1; }

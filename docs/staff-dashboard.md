@@ -2,9 +2,11 @@
 
 Route: `/staff/dashboard`. Started from `origin/main` at `534cb44`.
 
-The dashboard uses independent booking-report and booking-filters endpoints and Angular stack with no new dependencies. The container owns requests and applied filters; the page component owns presentation. Staff navigation lives in `layouts/staff`.
+The dashboard uses independent booking-report and booking-filters endpoints and Angular stack with no new dependencies. The container owns requests and applied filters; the page component owns presentation. Navigation lives in the shared `layouts/app-layout` sidebar, including Dashboard and Bookings.
 
-`app.routes.ts` loads section routes. `staff.routes.ts` owns staff access and layout, then loads `dashboard.routes.ts`. Existing user/auth URLs are assembled in `user.routes.ts`. The obsolete shopping features (product, order and order-line-item) live under `feature/legacy`, with their URLs preserved through `legacy.routes.ts`.
+`app.routes.ts` wraps account, staff, user and legacy routes in one authenticated layout. `staff.routes.ts` owns staff access, then loads `dashboard.routes.ts`. Existing user/auth URLs are assembled in `user.routes.ts` and `auth.routes.ts`; login and registration remain standalone. The legacy shopping features (product, order and order-line-item) live under `feature/legacy`, with their URLs preserved through `legacy.routes.ts`.
+
+The sidebar offers role-authorized destinations, an authorized Sportify home link, the Profile disclosure with My Account and Sign out, and area switching for ADMIN + USER accounts. Desktop defaults expanded; its compact rail keeps navigation accessible and preserves its state across protected pages. At widths up to 900px, navigation defaults closed behind an edge toggle. The mobile drawer traps focus, makes page content inert, closes on Escape/backdrop/navigation (including selecting the current page), and returns focus to the toggle. Resizing or toggling does not recreate the page. Reload persistence is intentionally unnecessary.
 
 `core/role.guard.ts` reads each route's `data.allowedRoles`. It requires at least one matching role for every configured ancestor/child policy and denies access if no policy is configured. Staff declares `['ADMIN', 'FINANCE', 'SUPERVISOR']`. Login landing-page selection remains separate.
 
@@ -30,6 +32,12 @@ Deploy the matching backend with Flyway V10/V11: V10 renames internal `user_orde
 Take and verify a fresh backup, stop old writers, recheck conflicts/dependencies, run migrations, deploy both apps, and smoke-test before resuming writes. Retire legacy Java writers/readers and exclude old seed scripts targeting `user_orders`/`external_bookings`. Failed V11 rolls back; after successful cutover, backup restore is safe only before new writes, otherwise reconcile writes or use a reviewed forward repair. PR development migrated disposable databases only. Backend PR #11 and frontend PR #20 must release together.
 
 ## Verification
+
+Shared-sidebar issue #22: 77 focused tests pass across the application routes, sidebar, role guard, auth routes, account, dashboard and bookings. Regression checks cover shell identity across protected pages, account draft/URL preservation, role-based navigation, desktop collapse, mobile dismissal (including current-page selection), focus return and session loss. The production build passes with the existing login/register stylesheet budget warnings.
+
+Browser checks with mocked API responses pass at 1440px desktop and 390px mobile for ADMIN, FINANCE, SUPERVISOR, USER and ADMIN + USER. Checks cover authorized deep links and refresh, back/forward area context, account/dashboard draft preservation, compact-rail labels, mobile Tab/Shift+Tab trapping, Escape/backdrop dismissal, navigation focus return, logout, standalone registration and horizontal overflow. These validate frontend behavior; they do not exercise a live backend.
+
+The full `npm test -- --watch=false` run reports 136 passing tests and the same 11 legacy fixture failures reproduced on the unchanged issue-22 base (`a004b36`, 129 passing). Those failures are missing required inputs or providers in legacy product/order/user component tests and are outside this layout change.
 
 ```sh
 npm test -- --watch=false --include='src/app/feature/staff/**/*.spec.ts' --include='src/app/core/role.guard.spec.ts'

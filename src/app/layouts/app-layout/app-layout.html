@@ -1,0 +1,68 @@
+<div class="app-shell" [class.collapsed]="!expanded()" [class.mobile]="mobile()" [class.signed-out]="!auth.session()">
+  @if (auth.session(); as session) {
+    @if (modal()) {
+      <button type="button" class="backdrop" tabindex="-1" aria-label="Close sidebar" (click)="closeMobile()"></button>
+    }
+    <aside [attr.role]="modal() ? 'dialog' : null" [attr.aria-modal]="modal() ? 'true' : null"
+           aria-label="Application sidebar" [cdkTrapFocus]="modal()" (keydown.escape)="closeMobile()">
+      <button #sidebarToggle type="button" class="sidebar-toggle" (click)="toggleSidebar()"
+              [attr.aria-label]="expanded() ? 'Collapse sidebar' : 'Expand sidebar'"
+              [attr.aria-expanded]="expanded()" aria-controls="sidebar-navigation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"/><path [attr.d]="expanded() ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'"/></svg>
+        <span class="label">{{ expanded() ? 'Collapse sidebar' : 'Expand sidebar' }}</span>
+      </button>
+      <div id="sidebar-navigation" class="sidebar-body" [hidden]="mobile() && !expanded()">
+        <a class="brand" [routerLink]="auth.destination()" aria-label="Sportify home">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="5"/><path d="M16 2v28M2 16h28M7 2v28M25 2v28"/><circle cx="16" cy="16" r="5"/></svg>
+          <span class="label">Sportify</span>
+        </a>
+        <p class="area">{{ inStaff() ? 'Staff workspace' : 'Your workspace' }}</p>
+        <nav aria-label="Application navigation">
+          @if (session.roles.includes('ADMIN') || session.roles.includes('FINANCE') || session.roles.includes('SUPERVISOR')) {
+            <a [routerLink]="['/', paths.staff, paths.dashboard]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Dashboard">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span class="label">Dashboard</span>
+            </a>
+            <a [routerLink]="['/', paths.staff, paths.bookings]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Bookings">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v16H4zM8 2v6M16 2v6M4 11h16M8 15h3M14 15h3"/></svg><span class="label">Bookings</span>
+            </a>
+          }
+          @if (!inStaff() && session.roles.includes('USER')) {
+            <a [routerLink]="['/' + paths.products]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Products">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"/></svg><span class="label">Products</span>
+            </a>
+            <a [routerLink]="['/' + paths.users]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Users">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 21v-3a7 7 0 0 1 14 0v3M17 3a4 4 0 0 1 0 8M19 14a6 6 0 0 1 3 7"/></svg><span class="label">Users</span>
+            </a>
+            <a [routerLink]="['/' + paths.orderLineItems]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Order Line Items">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg><span class="label">Order Line Items</span>
+            </a>
+            <a [routerLink]="['/' + paths.orders]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Order">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg><span class="label">Order</span>
+            </a>
+          }
+          @if (session.roles.includes('ADMIN') && session.roles.includes('USER')) {
+            <a [routerLink]="inStaff() ? ['/' + paths.products] : ['/', paths.staff, paths.dashboard]"
+               [attr.aria-label]="inStaff() ? 'Switch to legacy area' : 'Switch to staff area'">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18l-4-4M21 17H3l4 4"/></svg>
+              <span class="label">{{ inStaff() ? 'Switch to legacy area' : 'Switch to staff area' }}</span>
+            </a>
+          }
+          <details #profileMenu class="profile-menu">
+            <summary aria-label="Profile">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-3a8 8 0 0 1 16 0v3"/></svg><span class="label">Profile</span>
+            </summary>
+            <a [routerLink]="['/' + paths.account]" routerLinkActive="active" ariaCurrentWhenActive="page"
+               aria-label="My Account" (click)="profileMenu.open = false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v18H4zM8 8h8M8 12h8M8 16h5"/></svg><span class="label">My Account</span>
+            </a>
+            <button type="button" aria-label="Sign out" (click)="auth.logout()">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3H4v18h6M9 12h12l-5-5M21 12l-5 5"/></svg><span class="label">Sign out</span>
+            </button>
+          </details>
+        </nav>
+        <p class="sidebar-note">A clear view of every court.</p>
+      </div>
+    </aside>
+  }
+  <div class="content" [inert]="modal() && !!auth.session()"><router-outlet /></div>
+</div>
