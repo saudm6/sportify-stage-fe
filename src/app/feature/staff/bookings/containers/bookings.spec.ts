@@ -339,6 +339,47 @@ describe('Staff bookings', () => {
     applied.flush(report);
   });
 
+  it.each([
+    ['branchPublicId', id, 'branches'],
+    ['sportPublicId', id, 'sports'],
+    ['courtPublicId', id, 'courts'],
+    ['status', 'CONFIRMED', 'statuses'],
+    ['bookingType', 'INTERNAL', 'bookingTypes'],
+  ] as const)(
+    'removes unavailable applied %s from requests and the URL',
+    async (key, value, option) => {
+      const staleUrl = `${url.replace('page=1', 'page=3')}&${key}=${value}&search=Alice`;
+      const harness = await RouterTestingHarness.create();
+      const page = await harness.navigateByUrl(staleUrl, Bookings);
+      const pending = http.expectOne((req) => req.url.endsWith('/staff/bookings'));
+      filters().flush({ ...options, [option]: [] });
+      await TestBed.inject(ApplicationRef).whenStable();
+
+      expect(pending.cancelled).toBe(true);
+      const refreshed = list();
+      expect(refreshed.request.params.has(key)).toBe(false);
+      expect(refreshed.request.params.get('search')).toBe('Alice');
+      expect(refreshed.request.params.get('page')).toBe('1');
+      refreshed.flush(report);
+      expect(page.form.controls[key].value).toBe('');
+      expect(page.applied()[key]).toBe('');
+      expect(
+        TestBed.inject(Router).parseUrl(TestBed.inject(Router).url).queryParams[key] ?? '',
+      ).toBe('');
+
+      await page.setPage(2);
+      const next = list();
+      expect(next.request.params.has(key)).toBe(false);
+      next.flush(report);
+
+      await harness.navigateByUrl(staleUrl, Bookings);
+      await TestBed.inject(ApplicationRef).whenStable();
+      const restored = list();
+      expect(restored.request.params.has(key)).toBe(false);
+      restored.flush(report);
+    },
+  );
+
   it.each(['branchPublicId', 'sportPublicId'] as const)(
     'clears a court whose loaded %s does not match the selection',
     async (key) => {

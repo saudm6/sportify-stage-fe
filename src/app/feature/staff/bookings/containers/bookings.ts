@@ -66,6 +66,7 @@ export class Bookings {
   private readonly service = inject(StaffBookingsApi);
   readonly optionsLoading = signal(false);
   readonly optionsError = signal('');
+  private optionsLoaded = false;
   private readonly listRefresh = new Subject<void>();
   private readonly selection = new Subject<BookingIdentity | null>();
   readonly applied = signal<BookingsQuery>(defaultBookingsQuery());
@@ -126,6 +127,7 @@ export class Bookings {
         this.optionsLoading.set(false);
         this.optionsError.set(result.error);
         if (result.options) {
+          this.optionsLoaded = true;
           this.options.set(result.options);
           this.reconcileSelections(result.options);
         }
@@ -183,6 +185,7 @@ export class Bookings {
             this.validation.set(validationMessage);
             return of(null);
           }
+          if (this.optionsLoaded && this.reconcileSelections(this.options())) return of(null);
           if (['from', 'to', 'page', 'pageSize'].some((key) => !params.has(key))) {
             void this.router.navigate([], {
               relativeTo: this.route,
@@ -217,6 +220,8 @@ export class Bookings {
   }
 
   private reconcileSelections(options: BookingFilterOptions) {
+    const draft = this.form.getRawValue();
+    const query = { ...this.applied() };
     for (const [key, values] of [
       ['branchPublicId', options.branches.map((item) => item.publicId)],
       ['sportPublicId', options.sports.map((item) => item.publicId)],
@@ -224,11 +229,18 @@ export class Bookings {
       ['status', options.statuses],
       ['bookingType', options.bookingTypes],
     ] as const) {
-      const control = this.form.controls[key];
-      if (control.value && !values.some((value) => value === control.value))
-        control.setValue('', { emitEvent: false });
+      for (const filters of [draft, query]) {
+        if (filters[key] && !values.some((value) => value === filters[key])) filters[key] = '';
+      }
     }
-    this.clearIncompatibleCourt();
+    draft.courtPublicId = this.compatibleCourtId(draft);
+    query.courtPublicId = this.compatibleCourtId(query);
+    this.form.setValue(draft, { emitEvent: false });
+    if (JSON.stringify(query) === JSON.stringify(this.applied())) return false;
+    query.page = 1;
+    this.applied.set(query);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: query, replaceUrl: true });
+    return true;
   }
 
   courts() {
@@ -241,14 +253,18 @@ export class Bookings {
   }
 
   private clearIncompatibleCourt() {
-    const values = this.form.getRawValue();
+    this.form.controls.courtPublicId.setValue(this.compatibleCourtId(this.form.getRawValue()));
+  }
+
+  private compatibleCourtId(values: BookingsFilters) {
     const court = this.options().courts.find((item) => item.publicId === values.courtPublicId);
     if (
       court &&
       ((values.branchPublicId && values.branchPublicId !== court.branchPublicId) ||
         (values.sportPublicId && values.sportPublicId !== court.sportPublicId))
     )
-      this.form.controls.courtPublicId.setValue('');
+      return '';
+    return values.courtPublicId;
   }
 
   private navigate(query: BookingsQuery) {
