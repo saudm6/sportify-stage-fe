@@ -1,20 +1,26 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { BookingReport } from '../models/booking-report';
-import { DashboardFilters, DatePreset } from '../models/dashboard-filters';
+import { RouterLink } from '@angular/router';
+import { PAGE_PATHS } from '../../../../core/urls';
+import { BookingFilterOptions, BookingReport } from '../../shared/models/booking-report';
+import { ReportFilters, DatePreset } from '../../shared/models/report-filters';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DecimalPipe, ReactiveFormsModule],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.css',
 })
 export class DashboardPage {
-  readonly form = input.required<FormGroup<{ [K in keyof DashboardFilters]: FormControl<string> }>>();
-  readonly applied = input.required<DashboardFilters>();
+  readonly paths = PAGE_PATHS;
+  readonly form = input.required<FormGroup<{ [K in keyof ReportFilters]: FormControl<string> }>>();
+  readonly applied = input.required<ReportFilters>();
   readonly report = input<BookingReport | null>(null);
-  readonly options = input.required<BookingReport['availableFilters']>();
+  readonly options = input.required<BookingFilterOptions>();
+  readonly optionsLoading = input(false);
+  readonly optionsError = input('');
+  readonly retryOptions = output();
   readonly loading = input(false);
   readonly error = input('');
   readonly validation = input('');

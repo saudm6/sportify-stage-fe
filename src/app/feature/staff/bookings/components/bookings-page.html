@@ -1,0 +1,324 @@
+<main [bookingDetailFocus]="selected()" (dismissDetails)="closeDetails.emit()">
+  <header class="page-heading">
+    <div>
+      <h1>Bookings</h1>
+      <p>Review internal and external bookings across your venues.</p>
+    </div>
+    <span class="timezone">All times in Oman <strong>OMR</strong></span>
+  </header>
+  <form
+    class="filters"
+    [formGroup]="form()"
+    (ngSubmit)="applyFilters.emit()"
+    aria-label="Booking filters"
+  >
+    <div class="filter-fields">
+      <label
+        >From (required)<input aria-required="true" type="date" formControlName="from"
+      /></label>
+      <label>To (required)<input aria-required="true" type="date" formControlName="to" /></label>
+      <label
+        >Branch<select aria-label="Branch" formControlName="branchPublicId">
+          <option value="">All branches</option>
+          @for (item of options().branches; track item.publicId) {
+            <option [value]="item.publicId">{{ item | referenceName }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Sport<select aria-label="Sport" formControlName="sportPublicId">
+          <option value="">All sports</option>
+          @for (item of options().sports; track item.publicId) {
+            <option [value]="item.publicId">{{ item | referenceName }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Court<select aria-label="Court" formControlName="courtPublicId">
+          <option value="">All courts</option>
+          @for (item of courts(); track item.publicId) {
+            <option [value]="item.publicId">{{ item | referenceName }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Status<select aria-label="Status" formControlName="status">
+          <option value="">All statuses</option>
+          @for (item of options().statuses; track item) {
+            <option [value]="item">{{ item | titlecase }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Source<select aria-label="Source" formControlName="bookingType">
+          <option value="">All sources</option>
+          @for (item of options().bookingTypes; track item) {
+            <option [value]="item">{{ item | titlecase }}</option>
+          }
+        </select></label
+      >
+      <label class="search"
+        >Search<input
+          type="search"
+          formControlName="search"
+          placeholder="Name or reference"
+          aria-description="Customer name, transaction or booking reference"
+      /></label>
+    </div>
+    <div class="filter-footer">
+      <p>Dates include bookings starting on each day. Apply to update results.</p>
+      <div class="actions">
+        <button type="button" (click)="resetFilters.emit()">Reset</button
+        ><button class="primary" type="submit">Apply filters</button>
+      </div>
+    </div>
+    @if (validation()) {
+      <p class="error" role="alert">{{ validation() }}</p>
+    }
+    @if (optionsLoading()) {
+      <p role="status">Loading filter options...</p>
+    }
+    @if (optionsError()) {
+      <p class="error" role="alert">
+        {{ optionsError() }}
+      </p>
+    }
+  </form>
+  <div class="workspace" [class.with-detail]="selected()">
+    <section class="results" aria-labelledby="list-heading" [attr.aria-busy]="loading()">
+      <div class="results-heading">
+        <div>
+          <h2 id="list-heading" tabindex="-1">Booking records</h2>
+          <p>{{ applied().from }} to {{ applied().to }}</p>
+        </div>
+        @if (report(); as result) {
+          <span class="count"
+            ><strong>{{ result.pagination.totalItems | number }}</strong> bookings</span
+          >
+        }
+      </div>
+      @if (loading()) {
+        <div class="state" role="status">Loading bookings…</div>
+      } @else if (error()) {
+        <div class="state" role="alert">
+          <h3>Bookings could not be loaded</h3>
+          <p>{{ error() }}</p>
+        </div>
+      } @else if (report(); as result) {
+        @if (result.entries.length) {
+          <div class="table-scroll" tabindex="0" role="region" aria-label="Booking records table">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Booking start</th>
+                  <th scope="col">Customer / reference</th>
+                  <th scope="col">Court / branch</th>
+                  <th scope="col">Sport</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="amount">Amount <small>OMR</small></th>
+                  <th scope="col">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of result.entries; track row.bookingType + ':' + row.bookingPublicId) {
+                  @let rowSelected =
+                    selected()?.bookingType === row.bookingType &&
+                    selected()?.bookingPublicId === row.bookingPublicId;
+                  <tr [class.selected-row]="rowSelected">
+                    <td class="date-cell">
+                      <strong>{{ row.bookingStart | bookingDate: 'date' }}</strong
+                      ><small>{{ row.bookingStart | bookingDate: 'time' }}</small>
+                    </td>
+                    <td>
+                      <strong>{{ row.customerName | recordedValue }}</strong
+                      ><small class="reference">{{ row.bookingPublicId }}</small>
+                    </td>
+                    <td>
+                      <strong>{{ row.court | referenceName }}</strong
+                      ><small>{{ row.branch | referenceName }}</small>
+                    </td>
+                    <td>{{ row.sport | referenceName }}</td>
+                    <td>
+                      <span class="source"
+                        ><svg viewBox="0 0 24 24" aria-hidden="true">
+                          @if (row.bookingType === 'INTERNAL') {
+                            <circle cx="12" cy="7" r="3"></circle>
+                            <path d="M5 21v-3a7 7 0 0 1 14 0v3"></path>
+                          } @else {
+                            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+                            <path d="M8 3v4m8-4v4M4 11h16m-11 4h6"></path>
+                          }</svg
+                        >{{ row.bookingType | titlecase }}</span
+                      >
+                    </td>
+                    <td>
+                      <span
+                        class="chip"
+                        [class.confirmed]="row.status === 'CONFIRMED'"
+                        [class.cancelled]="row.status === 'CANCELLED'"
+                        >{{ row.status | titlecase }}</span
+                      >
+                    </td>
+                    <td class="amount">{{ row.amount | number: '1.3-3' }}</td>
+                    <td>
+                      <button
+                        class="view"
+                        (click)="viewDetails.emit(row)"
+                        [attr.aria-label]="
+                          'View details for ' +
+                          (row.bookingType | titlecase) +
+                          ' booking ' +
+                          row.bookingPublicId
+                        "
+                        [attr.aria-expanded]="rowSelected"
+                        aria-controls="booking-detail"
+                      >
+                        View details
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="state">
+            <h3>
+              {{
+                result.pagination.totalItems
+                  ? 'This page has no bookings'
+                  : 'No bookings match these filters'
+              }}
+            </h3>
+            <p>
+              {{
+                result.pagination.totalItems
+                  ? 'Return to the first page to review matching records.'
+                  : 'Try a wider date range or reset your filters.'
+              }}
+            </p>
+            @if (result.pagination.totalItems) {
+              <button (click)="changePage.emit(1)">Return to first page</button>
+            } @else {
+              <button (click)="resetFilters.emit()">Reset filters</button>
+            }
+          </div>
+        }
+        <footer class="pagination">
+          <label
+            >Rows per page<select
+              #pageSizeSelect
+              [value]="applied().pageSize"
+              (change)="changePageSize.emit(+pageSizeSelect.value)"
+            >
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select></label
+          >
+          <div class="actions">
+            <span>Page {{ result.pagination.page }} of {{ result.pagination.totalPages || 1 }}</span
+            ><button
+              [disabled]="result.pagination.page <= 1"
+              (click)="changePage.emit(result.pagination.page - 1)"
+            >
+              Previous</button
+            ><button
+              [disabled]="result.pagination.page >= result.pagination.totalPages"
+              (click)="changePage.emit(result.pagination.page + 1)"
+            >
+              Next
+            </button>
+          </div>
+        </footer>
+      }
+    </section>
+    @if (selected()) {
+      <section
+        id="booking-detail"
+        class="detail"
+        aria-labelledby="detail-heading"
+        [attr.aria-busy]="detailLoading()"
+      >
+        <header class="detail-header">
+          <h2 id="detail-heading" tabindex="-1">Booking details</h2>
+          <button (click)="closeDetails.emit()" aria-label="Close booking details">Close</button>
+        </header>
+        @if (detailLoading()) {
+          <p role="status">Loading booking details…</p>
+        } @else if (detailError()) {
+          <div role="alert">
+            <p class="error">{{ detailError() }}</p>
+          </div>
+        } @else if (detail(); as booking) {
+          <div class="detail-title">
+            <h3>{{ booking.customerName | recordedValue }}</h3>
+            <span
+              class="chip"
+              [class.confirmed]="booking.status === 'CONFIRMED'"
+              [class.cancelled]="booking.status === 'CANCELLED'"
+              >{{ booking.status | titlecase }}</span
+            >
+            <p>
+              {{ booking.court | referenceName }}<br />{{ booking.branch | referenceName }} /
+              {{ booking.sport | referenceName }}
+            </p>
+          </div>
+          <dl>
+            <dt>Source</dt>
+            <dd>{{ booking.bookingType | titlecase }}</dd>
+            <dt>Booking reference</dt>
+            <dd>{{ booking.bookingPublicId }}</dd>
+            <dt>Start</dt>
+            <dd>{{ booking.bookingStart | bookingDate }}</dd>
+            <dt>End</dt>
+            <dd>{{ booking.bookingEnd | bookingDate }}</dd>
+            <dt>Duration</dt>
+            <dd>{{ booking.durationMinutes | number: '1.0-2' }} minutes</dd>
+            <dt>Amount</dt>
+            <dd>{{ booking.amount | number: '1.3-3' }} OMR</dd>
+            <dt>Recorded at</dt>
+            <dd>{{ booking.recordedAt | bookingDate }}</dd>
+            <dt>Transaction reference</dt>
+            <dd>
+              {{
+                booking.bookingType === 'EXTERNAL'
+                  ? 'Not applicable'
+                  : (booking.transactionReference | recordedValue)
+              }}
+            </dd>
+            <dt>Customer contact</dt>
+            <dd>{{ booking.customerContact | recordedValue }}</dd>
+            <dt>External notes</dt>
+            <dd class="notes">
+              {{
+                booking.bookingType === 'INTERNAL'
+                  ? 'Not applicable'
+                  : (booking.externalNotes | recordedValue)
+              }}
+            </dd>
+            <dt>Cancelled at</dt>
+            <dd>
+              {{
+                booking.status === 'CANCELLED'
+                  ? (booking.cancelledAt | bookingDate)
+                  : 'Not applicable'
+              }}
+            </dd>
+            <dt>Cancelled by</dt>
+            <dd>
+              {{
+                booking.status !== 'CANCELLED'
+                  ? 'Not applicable'
+                  : booking.bookingType === 'EXTERNAL'
+                    ? 'Unavailable for external bookings'
+                    : (booking.cancelledByName | recordedValue)
+              }}
+            </dd>
+          </dl>
+        }
+      </section>
+    }
+  </div>
+</main>

@@ -24,14 +24,16 @@
     </div>
     <p class="hint">Date presets use Oman time. This week runs Monday to Sunday.</p>
     @if (validation()) { <p role="alert" class="error">{{ validation() }}</p> }
+    @if (optionsLoading()) { <p role="status">Loading filter options...</p> }
+    @if (optionsError()) { <p class="error" role="alert">{{ optionsError() }} <button type="button" (click)="retryOptions.emit()">Retry filter options</button></p> }
   </form>
 
   <section class="results" [attr.aria-busy]="loading()" aria-label="Booking metrics">
     <div class="results-heading">
       <div><h2>Confirmed bookings</h2><p>Booking starts from <strong>{{ applied().from }}</strong> through <strong>{{ applied().to }}</strong>, inclusive.</p></div>
-      <div class="bookings-link"><button disabled type="button" aria-describedby="bookings-unavailable">View bookings</button><small id="bookings-unavailable">Bookings page coming soon</small></div>
+      <div class="bookings-link"><a [routerLink]="['/', paths.staff, paths.bookings]" [queryParams]="{ from: applied().from, to: applied().to, branchPublicId: applied().branchPublicId, sportPublicId: applied().sportPublicId, status: 'CONFIRMED', page: 1, pageSize: 20 }">View bookings</a></div>
     </div>
-    <p class="scope-note">Customer and external bookings with confirmed status only. Revenue follows the booking date, not the payment date.</p>
+    <p class="scope-note">Internal and external bookings with confirmed status only. Revenue follows the booking date, not the payment date.</p>
     @if (loading()) {
       <div class="status" role="status">Loading booking metrics…</div>
     } @else if (error()) {
