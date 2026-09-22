@@ -10,6 +10,7 @@ import { PAGE_PATHS } from '../../../../core/urls';
 import { rxState, RxState } from '@rx-angular/state';
 import { finalize, Observable } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
+import { defaultPagination, PaginationState, updatePagination } from '../../../../shared/functions/pagination';
 
 interface AllUserState {
   users: UserData[];
@@ -43,8 +44,8 @@ export class AllUsersList implements OnInit {
     this.state.set({
       users: [],
       totalCount: 0,
-      pageNumber: 1,
-      pageSize: 5,
+      pageNumber: defaultPagination().page,
+      pageSize: defaultPagination().pageSize,
       isLoading: false,
       totalPages: 0,
     });
@@ -57,20 +58,22 @@ export class AllUsersList implements OnInit {
   }
 
   changePage(page: number): void {
-    if (page < 1 || page > this.state.get('totalPages')) {
-      return;
-    }
-
-    this.state.set({ pageNumber: page });
-    this.loadUsers();
+    this.changePagination({ page });
   }
 
   changePageSize(pageSize: number): void {
-    if (pageSize < 1) {
-      return;
-    }
+    this.changePagination({ pageSize });
+  }
 
-    this.state.set({ pageSize: pageSize, pageNumber: 1 });
+  private changePagination(change: Partial<PaginationState>): void {
+    const pagination = updatePagination(
+      { page: this.state.get('pageNumber'), pageSize: this.state.get('pageSize') },
+      change,
+      Math.min(this.state.get('totalPages'), 100),
+      10,
+    );
+    if (!pagination) return;
+    this.state.set({ pageNumber: pagination.page, pageSize: pagination.pageSize });
     this.loadUsers();
   }
 

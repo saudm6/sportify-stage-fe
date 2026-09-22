@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { PAGE_PATHS } from '../../../../core/urls';
 import { BookingFilterOptions, BookingReport } from '../../shared/models/booking-report';
 import { ReportFilters, DatePreset } from '../../shared/models/report-filters';
+import { defaultPagination } from '../../../../shared/functions/pagination';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -13,6 +14,7 @@ import { ReportFilters, DatePreset } from '../../shared/models/report-filters';
   styleUrl: './dashboard-page.css',
 })
 export class DashboardPage {
+  readonly pagination = defaultPagination();
   readonly paths = PAGE_PATHS;
   readonly form = input.required<FormGroup<{ [K in keyof ReportFilters]: FormControl<string> }>>();
   readonly applied = input.required<ReportFilters>();

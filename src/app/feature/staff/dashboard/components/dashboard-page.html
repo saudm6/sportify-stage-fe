@@ -31,7 +31,7 @@
   <section class="results" [attr.aria-busy]="loading()" aria-label="Booking metrics">
     <div class="results-heading">
       <div><h2>Confirmed bookings</h2><p>Booking starts from <strong>{{ applied().from }}</strong> through <strong>{{ applied().to }}</strong>, inclusive.</p></div>
-      <div class="bookings-link"><a [routerLink]="['/', paths.staff, paths.bookings]" [queryParams]="{ from: applied().from, to: applied().to, branchPublicId: applied().branchPublicId, sportPublicId: applied().sportPublicId, status: 'CONFIRMED', page: 1, pageSize: 20 }">View bookings</a></div>
+      <div class="bookings-link"><a [routerLink]="['/', paths.staff, paths.bookings]" [queryParams]="{ from: applied().from, to: applied().to, branchPublicId: applied().branchPublicId, sportPublicId: applied().sportPublicId, status: 'CONFIRMED', page: pagination.page, pageSize: pagination.pageSize }">View bookings</a></div>
     </div>
     <p class="scope-note">Internal and external bookings with confirmed status only. Revenue follows the booking date, not the payment date.</p>
     @if (loading()) {

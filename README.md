@@ -36,6 +36,20 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Shared pagination
+
+Change `DEFAULT_PAGE_SIZE` in `src/app/shared/functions/pagination.ts` to set the
+initial size for users, bookings, resets and dashboard links. Keep it between 1
+and 10 while the users API has a 10-row limit. Bookings supports up to 100 rows.
+
+Use `defaultPagination()` for initial state and
+`updatePagination(current, { page })` or `updatePagination(current, { pageSize })`
+for events. Size changes return page 1; invalid events return `null`.
+`PAGE_SIZE_OPTIONS` supplies dropdown options, including the default; filter it
+to the endpoint's maximum. Use `validPagination(query)` before fetching URL state.
+Users maps the helper's `page` to its API's `pageNumber` and passes its limits to
+`updatePagination(current, change, maxPage, maxPageSize)`.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:

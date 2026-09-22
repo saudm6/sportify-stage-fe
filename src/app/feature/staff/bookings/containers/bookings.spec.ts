@@ -8,6 +8,7 @@ import { BookingReportEntry } from '../../shared/models/booking-report';
 import { dateRange } from '../../shared/functions/dates';
 import { BookingDetails } from '../models/bookings';
 import { Bookings } from './bookings';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../../../../shared/functions/pagination';
 
 describe('Staff bookings', () => {
   let http: HttpTestingController;
@@ -550,7 +551,8 @@ describe('Staff bookings', () => {
     const initial = list();
     expect(initial.request.params.get('from')).toBe(dateRange('month').from);
     initial.flush(report);
-    expect(TestBed.inject(Router).url).toContain('pageSize=20');
+    expect(initial.request.params.get('pageSize')).toBe(String(DEFAULT_PAGE_SIZE));
+    expect(TestBed.inject(Router).url).toContain(`pageSize=${DEFAULT_PAGE_SIZE}`);
     const page = await harness.navigateByUrl(`${url}&search=Alice&bookingType=INTERNAL`, Bookings);
     list().flush(report);
     await page.reset();
@@ -558,7 +560,25 @@ describe('Staff bookings', () => {
     expect(reset.request.params.get('from')).toBe(dateRange('month').from);
     expect(reset.request.params.has('search')).toBe(false);
     expect(reset.request.params.has('bookingType')).toBe(false);
+    expect(reset.request.params.get('pageSize')).toBe(String(DEFAULT_PAGE_SIZE));
     reset.flush(report);
+  });
+
+  it('renders shared size options and handles the size selection event', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url.replace('page=1', 'page=2'), Bookings);
+    list().flush(report);
+    harness.detectChanges();
+    const select = harness.routeNativeElement!.querySelector<HTMLSelectElement>('.pagination select')!;
+    expect([...select.options].map((option) => Number(option.value))).toEqual(PAGE_SIZE_OPTIONS);
+    expect(select.value).toBe('20');
+    select.value = String(DEFAULT_PAGE_SIZE);
+    select.dispatchEvent(new Event('change'));
+    await TestBed.inject(ApplicationRef).whenStable();
+    const changed = list();
+    expect(changed.request.params.get('page')).toBe('1');
+    expect(changed.request.params.get('pageSize')).toBe(String(DEFAULT_PAGE_SIZE));
+    changed.flush(report);
   });
 
   it('loads options once and preserves them when a list request fails', async () => {

@@ -6,6 +6,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Dashboard } from './dashboard';
 import { dateRange } from '../../shared/functions/dates';
+import { DEFAULT_PAGE_SIZE } from '../../../../shared/functions/pagination';
 
 describe('Staff dashboard', () => {
   let http: HttpTestingController;
@@ -60,7 +61,7 @@ describe('Staff dashboard', () => {
     const link = harness.routeNativeElement!.querySelector<HTMLAnchorElement>('a[href*="/staff/bookings"]')!;
     const target = new URL(link.href);
     expect(Object.fromEntries(target.searchParams)).toEqual({ from: '2026-09-01', to: '2026-09-30',
-      branchPublicId: branch, sportPublicId: sport, status: 'CONFIRMED', page: '1', pageSize: '20' });
+      branchPublicId: branch, sportPublicId: sport, status: 'CONFIRMED', page: '1', pageSize: String(DEFAULT_PAGE_SIZE) });
     http.expectNone(req => req.url.endsWith('/staff/booking-report'));
   });
 
