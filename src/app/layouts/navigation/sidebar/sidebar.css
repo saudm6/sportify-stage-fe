@@ -1,0 +1,32 @@
+:host { display: block; position: sticky; top: 0; align-self: flex-start; flex: 0 0 248px; width: 248px; height: 100dvh; z-index: 30; background: #22578b; color: white; font-family: 'Trebuchet MS', Arial, sans-serif; }
+:host([hidden]) { display: none; }
+:host(.collapsed) { flex-basis: 72px; width: 72px; }
+aside { display: flex; flex-direction: column; height: 100%; padding: 16px 12px; }
+.sidebar-toggle { flex-shrink: 0; }
+.sidebar-body { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px; margin: -4px; }
+button, a, summary { position: relative; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 6px; color: inherit; background: transparent; text-decoration: none; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; text-align: left; }
+button { width: 100%; }
+svg { width: 24px; height: 24px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.brand { margin-top: 20px; font-size: 25px; }
+.brand svg { color: #c3deed; }
+.area { color: #d1e2f1; font-size: 13px; margin: 12px 12px 28px; }
+nav { display: grid; gap: 6px; }
+nav a.active { background: white; color: #22578b; }
+a:hover, button:hover, summary:hover { background: #174471; color: white; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid #ffc27b; outline-offset: 2px; }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: '+'; margin-left: auto; }
+details[open] summary::after { content: '−'; }
+.profile-menu { margin-top: 16px; border-top: 1px solid #ffffff40; padding-top: 12px; }
+.profile-menu a, .profile-menu button { margin-top: 6px; }
+.sidebar-note { padding: 40px 12px 0; font-size: 12px; line-height: 1.5; color: #d1e2f1; }
+:host(.collapsed) .label, :host(.collapsed) .area, :host(.collapsed) .sidebar-note, :host(.collapsed) summary::after { display: none; }
+:host(.collapsed) :is(a, button, summary):is(:hover, :focus-visible) .label { display: block; position: fixed; z-index: 30; left: 72px; width: max-content; max-width: 220px; padding: 8px 12px; border-radius: 6px; background: #174471; color: white; font-size: 14px; box-shadow: 0 2px 8px #0003; }
+dialog { position: fixed; inset: 0 auto 0 0; width: min(280px, 100vw); height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 16px 12px; border: 0; color: white; background: #22578b; }
+dialog[open] { display: flex; flex-direction: column; }
+dialog:not([open]) { display: none; }
+dialog::backdrop { background: #10243880; }
+:host(.mobile) { flex-basis: 48px; width: 48px; padding: 12px 2px; }
+.mobile-trigger .label { display: none; }
+.mobile-trigger:is(:hover, :focus-visible) .label { display: block; position: fixed; left: 48px; width: max-content; padding: 8px 12px; border-radius: 6px; background: #174471; color: white; box-shadow: 0 2px 8px #0003; }
