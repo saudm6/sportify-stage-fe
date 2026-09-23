@@ -10,6 +10,7 @@ export const PAGE_PATHS = {
   staff: 'staff',
   dashboard: 'dashboard',
   bookings: 'bookings',
+  courts: 'courts',
 };
 export const LOGIN_URL = `/${PAGE_PATHS.login}`;
 

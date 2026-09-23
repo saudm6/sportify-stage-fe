@@ -1,0 +1,72 @@
+h3 {
+  margin: 24px 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+h3 span {
+  color: #586a7b;
+  font-size: 12px;
+  margin-left: 5px;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.prices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  font-weight: 600;
+}
+input,
+select {
+  font: inherit;
+  border: 1px solid #b8c8d4;
+  border-radius: 6px;
+  background: white;
+  color: inherit;
+  min-height: 44px;
+  padding: 10px 12px;
+}
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-weight: 400;
+}
+input[readonly] {
+  background: #edf3f8;
+}
+small,
+.hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #586a7b;
+}
+.hint {
+  margin-top: 12px;
+}
+.error {
+  color: #a52c28;
+}
+[aria-invalid='true'] {
+  border-color: #a52c28;
+}
+:is(input, select):focus-visible {
+  outline: 3px solid #c16b25;
+  outline-offset: 2px;
+}
+@media (max-width: 500px) {
+  .fields,
+  .prices {
+    grid-template-columns: 1fr;
+  }
+}
