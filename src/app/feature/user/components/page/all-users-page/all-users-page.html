@@ -92,7 +92,7 @@
             Previous
           </button>
 
-          <button type="button" [disabled]="pageNumber() >= totalPages() || pageNumber() >= 100" (click)="pageChange.emit(pageNumber() + 1)"
+          <button type="button" [disabled]="pageNumber() >= totalPages()" (click)="pageChange.emit(pageNumber() + 1)"
             class="inline-flex min-w-28 items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-200 transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:hover:translate-y-0">
             Next
           </button>

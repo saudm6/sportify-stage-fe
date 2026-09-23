@@ -14,9 +14,9 @@ describe('AllUsersList pagination', () => {
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(AllUsersList);
     const component = fixture.componentInstance;
-    const respond = (pageNumber: number, pageSize: number) => {
+    const respond = (pageNumber: number, pageSize: number, totalPages = 3) => {
       const request = http.expectOne((req) => req.url.endsWith(`?pageNumber=${pageNumber}&pageSize=${pageSize}`));
-      request.flush({ items: [], totalCount: 30, totalPages: 3, pageNumber, pageSize });
+      request.flush({ items: [], totalCount: totalPages * pageSize, totalPages, pageNumber, pageSize });
       fixture.detectChanges();
     };
 
@@ -36,6 +36,20 @@ describe('AllUsersList pagination', () => {
 
     for (const page of [0, 1.5, NaN, Infinity, 4, 101]) component.changePage(page);
     for (const size of [0, 1.5, NaN, Infinity, 20]) component.changePageSize(size);
+    http.expectNone(() => true);
+
+    component.loadUsers();
+    respond(1, 10, 101);
+    component.changePage(100);
+    respond(100, 10, 101);
+    const nextAfter100 = [...fixture.nativeElement.querySelectorAll('button')]
+      .find((button: HTMLButtonElement) => button.textContent.trim() === 'Next');
+    expect(nextAfter100.disabled).toBe(false);
+    nextAfter100.click();
+    respond(101, 10, 101);
+    expect(fixture.nativeElement.textContent).toMatch(/Page\s+101\s+of\s+101/);
+    expect(nextAfter100.disabled).toBe(true);
+    component.changePage(102);
     http.expectNone(() => true);
     http.verify();
     fixture.destroy();

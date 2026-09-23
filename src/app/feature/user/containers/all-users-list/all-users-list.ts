@@ -69,7 +69,7 @@ export class AllUsersList implements OnInit {
     const pagination = updatePagination(
       { page: this.state.get('pageNumber'), pageSize: this.state.get('pageSize') },
       change,
-      Math.min(this.state.get('totalPages'), 100),
+      this.state.get('totalPages'),
       10,
     );
     if (!pagination) return;
