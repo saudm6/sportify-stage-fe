@@ -181,6 +181,7 @@ describe('Staff courts', () => {
     list().flush(response);
     harness.detectChanges();
     await open(true);
+    expect(dialog().querySelector('app-courtpopup app-popup')).not.toBeNull();
     expect(dialog().querySelector<HTMLInputElement>('input[readonly]')?.value).toBe('Seeb');
     expect(dialog().querySelector('select[formControlName="branchPublicId"]')).toBeNull();
     for (const price of prices)

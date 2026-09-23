@@ -1,11 +1,11 @@
 import { Component, DestroyRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { BehaviorSubject, catchError, of, switchMap } from 'rxjs';
 import { CourtsPage } from '../components/courts-page';
-import { CourtDialog } from '../components/court-dialog';
-import { CourtDialogData, CourtFilters, CourtList, CourtOptions } from '../models/courts';
+import { CourtPopup } from '../components/courtpopup';
+import { CourtFilters, CourtList, CourtOptions } from '../models/courts';
+import { popup } from '../../../../shared/functions/popup';
 import { CourtsApi } from '../service/courts-api';
 
 const emptyFilters: CourtFilters = {
@@ -17,7 +17,7 @@ const emptyFilters: CourtFilters = {
 
 @Component({
   selector: 'app-courts',
-  imports: [CourtsPage, MatDialogModule],
+  imports: [CourtsPage],
   template: `<app-courts-page
     [form]="form"
     [result]="result()"
@@ -34,7 +34,7 @@ const emptyFilters: CourtFilters = {
 })
 export class Courts {
   private readonly api = inject(CourtsApi);
-  private readonly dialog = inject(MatDialog);
+  private readonly openPopup = popup();
   private readonly destroyRef = inject(DestroyRef);
   private readonly page = viewChild.required(CourtsPage);
   private readonly query = new BehaviorSubject<CourtFilters>(emptyFilters);
@@ -87,20 +87,9 @@ export class Courts {
   }
 
   open(publicId?: string) {
-    const ref = this.dialog.open<CourtDialog, CourtDialogData, boolean>(CourtDialog, {
-      data: { publicId, options: this.options() },
-      width: '640px',
-      maxWidth: 'calc(100vw - 32px)',
-      maxHeight: '90dvh',
-      autoFocus: 'first-heading',
-      ariaLabelledBy: 'court-dialog-title',
-    });
-    const unregister = this.destroyRef.onDestroy(() => ref.close());
-    ref
-      .afterClosed()
+    this.openPopup(CourtPopup, { publicId, options: this.options() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((saved) => {
-        unregister();
         if (saved) {
           this.success.set(publicId ? 'Court updated.' : 'Court added.');
           this.page().focusAddCourt();

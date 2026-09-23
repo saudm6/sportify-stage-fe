@@ -19,3 +19,9 @@ Scope: no search, pagination or delete because these endpoints do not support th
 Baseline at `4857599`: 148 passing tests and six pre-existing legacy/user setup failures (missing required inputs/providers). No frontend AGENTS.md exists in this checkout; follow the issue's feature ownership instructions.
 
 Final verification: 12 new integration tests pass; full suite has 160 passing tests and the same six baseline failures. Production build passes with existing login/register stylesheet budget warnings. Chromium browser checks with mocked API responses pass at 1440px and 390px, including focus trapping, Escape/cancel restoration, successful-save focus, public-ID filters, detail loading, sport conflicts and inactive saves. Live backend persistence was not exercised.
+
+## Shared popup follow-up
+
+User selected option 1: rename the form to `CourtPopup` (`courtpopup.*`) and import common behavior. `shared/functions/popup.ts` provides an opener created in a component field initializer; it owns sizing, initial focus and cleanup when the owning component is destroyed. `shared/components/popup` provides the title, projected content, native submit form, loading/error display, buttons and save-time dismissal protection. Court fields, validation and API calls remain in `CourtPopup`. Features supply form controls within the shared form rather than nesting another form.
+
+Verification: 14 focused tests pass, covering the shared popup with separate example content and the court workflows. Full suite: 162 passing and the same six baseline failures. Build and desktop/mobile browser checks pass, including Enter submission and Escape/Cancel protection while saving. Configuration-generated forms (option 2) are deferred to a separate GitHub issue.

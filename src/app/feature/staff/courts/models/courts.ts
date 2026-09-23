@@ -52,7 +52,7 @@ export interface UpdateCourt extends Omit<CreateCourt, 'branchPublicId'> {
   isActive: boolean;
 }
 
-export interface CourtDialogData {
+export interface CourtPopupData {
   publicId?: string;
   options: CourtOptions;
 }

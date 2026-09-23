@@ -1,21 +1,22 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { finalize } from 'rxjs';
 import { notBlank } from '../../../../shared/functions';
-import { CourtDetails, CourtDialogData } from '../models/courts';
+import { Popup } from '../../../../shared/components/popup/popup';
+import { CourtDetails, CourtPopupData } from '../models/courts';
 import { CourtsApi } from '../service/courts-api';
 
 @Component({
-  selector: 'app-court-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule],
-  templateUrl: './court-dialog.html',
-  styleUrl: './court-dialog.css',
+  selector: 'app-courtpopup',
+  imports: [ReactiveFormsModule, Popup],
+  templateUrl: './courtpopup.html',
+  styleUrl: './courtpopup.css',
 })
-export class CourtDialog {
-  readonly data = inject<CourtDialogData>(MAT_DIALOG_DATA);
-  private readonly ref = inject(MatDialogRef<CourtDialog, boolean>);
+export class CourtPopup {
+  readonly data = inject<CourtPopupData>(MAT_DIALOG_DATA);
+  private readonly ref = inject(MatDialogRef<CourtPopup, boolean>);
   private readonly api = inject(CourtsApi);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
@@ -71,10 +72,10 @@ export class CourtDialog {
           error: (error) =>
             this.error.set(
               error.status === 404
-                ? 'This court is no longer available. Close this dialog and refresh the list.'
+                ? 'This court is no longer available. Close this popup and refresh the list.'
                 : error.status === 403
                   ? 'You do not have permission to manage this court.'
-                  : 'Court details could not be loaded. Close this dialog and open the court again.',
+                  : 'Court details could not be loaded. Close this popup and open the court again.',
             ),
         });
     }
@@ -99,14 +100,12 @@ export class CourtDialog {
       ? this.api.update(this.data.publicId, { ...fields, isActive: values.isActive })
       : this.api.create({ ...fields, branchPublicId: values.branchPublicId });
     this.saving.set(true);
-    this.ref.disableClose = true;
     this.error.set('');
     request
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.saving.set(false);
-          this.ref.disableClose = false;
         }),
       )
       .subscribe({
@@ -147,9 +146,5 @@ export class CourtDialog {
           }
         },
       });
-  }
-
-  cancel() {
-    if (!this.saving()) this.ref.close(false);
   }
 }
