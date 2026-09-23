@@ -72,9 +72,10 @@ export class AllUsersList implements OnInit {
       this.state.get('totalPages'),
       10,
     );
-    if (!pagination) return;
-    this.state.set({ pageNumber: pagination.page, pageSize: pagination.pageSize });
-    this.loadUsers();
+    if (pagination) {
+      this.state.set({ pageNumber: pagination.page, pageSize: pagination.pageSize });
+      this.loadUsers();
+    }
   }
 
   registerUser(): void {
@@ -137,15 +138,12 @@ export class AllUsersList implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe((deleted: boolean) => {
-      if (!deleted) {
-        return;
+      if (deleted) {
+        if (this.state.get('users').length === 1 && this.state.get('pageNumber') > 1) {
+          this.state.set({ pageNumber: this.state.get('pageNumber') - 1, });
+        }
+        this.loadUsers();
       }
-
-      if (this.state.get('users').length === 1 && this.state.get('pageNumber') > 1) {
-        this.state.set({ pageNumber: this.state.get('pageNumber') - 1, });
-      }
-
-      this.loadUsers();
     });
   }
 }

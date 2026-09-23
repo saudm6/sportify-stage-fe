@@ -176,24 +176,26 @@ export class Bookings {
           this.report.set(null);
           this.error.set('');
           this.loading.set(false);
-          if (!validBookingsFilters(query) || !validPagination(query)) {
+          if (validBookingsFilters(query) && validPagination(query)) {
+            if (this.optionsLoaded && this.reconcileSelections(this.options())) return of(null);
+            if (['from', 'to', 'page', 'pageSize'].every((key) => params.has(key))) {
+              this.loading.set(true);
+              return this.service.getList(query).pipe(
+                map((report) => ({ report, error: '' })),
+                catchError((error) => of({ report: null, error: requestError(error) })),
+              );
+            } else {
+              void this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: query,
+                replaceUrl: true,
+              });
+              return of(null);
+            }
+          } else {
             this.validation.set(validationMessage);
             return of(null);
           }
-          if (this.optionsLoaded && this.reconcileSelections(this.options())) return of(null);
-          if (['from', 'to', 'page', 'pageSize'].some((key) => !params.has(key))) {
-            void this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: query,
-              replaceUrl: true,
-            });
-            return of(null);
-          }
-          this.loading.set(true);
-          return this.service.getList(query).pipe(
-            map((report) => ({ report, error: '' })),
-            catchError((error) => of({ report: null, error: requestError(error) })),
-          );
         }),
         takeUntilDestroyed(),
       )
@@ -272,17 +274,18 @@ export class Bookings {
   }
   apply() {
     const filters: BookingsFilters = this.form.getRawValue();
-    if (!validBookingsFilters(filters)) {
+    if (validBookingsFilters(filters)) {
+      return this.navigate({
+        ...filters,
+        status: filters.status.trim(),
+        search: filters.search.trim(),
+        ...(updatePagination(this.applied(), { page: 1 }) ?? defaultPagination()),
+      });
+    } else {
       this.form.markAllAsTouched();
       this.validation.set(validationMessage);
       return Promise.resolve(false);
     }
-    return this.navigate({
-      ...filters,
-      status: filters.status.trim(),
-      search: filters.search.trim(),
-      ...(updatePagination(this.applied(), { page: 1 }) ?? defaultPagination()),
-    });
   }
   reset() {
     const query = defaultBookingsQuery();

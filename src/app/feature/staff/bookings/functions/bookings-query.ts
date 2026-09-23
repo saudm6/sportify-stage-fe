@@ -30,7 +30,11 @@ export function queryFromParams(params: ParamMap): BookingsQuery {
   }
   const page = params.get('page');
   const size = params.get('pageSize');
-  query.page = page === null ? query.page : /^\d+$/.test(page) ? Number(page) : NaN;
-  query.pageSize = size === null ? query.pageSize : /^\d+$/.test(size) ? Number(size) : NaN;
+  if (page !== null) {
+    query.page = /^\d+$/.test(page) ? Number(page) : NaN;
+  }
+  if (size !== null) {
+    query.pageSize = /^\d+$/.test(size) ? Number(size) : NaN;
+  }
   return query;
 }
