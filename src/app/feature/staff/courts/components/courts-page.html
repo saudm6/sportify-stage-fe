@@ -1,0 +1,121 @@
+<main>
+  <header class="page-heading">
+    <div>
+      <h1>Courts</h1>
+      <p>Manage your courts, availability and duration prices.</p>
+    </div>
+    <button
+      #addButton
+      type="button"
+      class="primary"
+      [disabled]="!optionsLoaded()"
+      (click)="addCourt.emit()"
+    >
+      Add court
+    </button>
+  </header>
+
+  <form
+    class="filters"
+    [formGroup]="form()"
+    (ngSubmit)="applyFilters.emit()"
+    aria-label="Court filters"
+  >
+    <div class="filter-fields">
+      <label
+        >Branch<select aria-label="Branch" formControlName="branchPublicId">
+          <option value="">All branches</option>
+          @for (branch of options().branches; track branch.publicId) {
+            <option [value]="branch.publicId">{{ branch.nameEn || branch.nameAr }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Sport<select aria-label="Sport" formControlName="sportPublicId">
+          <option value="">All sports</option>
+          @for (sport of options().sports; track sport.publicId) {
+            <option [value]="sport.publicId">{{ sport.nameEn || sport.nameAr }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Environment<select aria-label="Environment" formControlName="isIndoor">
+          <option value="">All environments</option>
+          <option value="true">Indoor</option>
+          <option value="false">Outdoor</option>
+        </select></label
+      >
+      <label
+        >Status<select aria-label="Status" formControlName="isActive">
+          <option value="">All statuses</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select></label
+      >
+    </div>
+    <div class="actions">
+      <button class="primary" type="submit">Apply filters</button
+      ><button type="button" (click)="resetFilters.emit()">Reset</button>
+    </div>
+  </form>
+
+  @if (success()) {
+    <p role="status" class="success">{{ success() }}</p>
+  }
+  <section class="results" aria-label="Courts" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="message" role="status">Loading courts…</p>
+    } @else if (error()) {
+      <p class="message error" role="alert">{{ error() }}</p>
+    } @else if (result(); as list) {
+      <p class="count">
+        {{ list.items.length }} {{ list.items.length === 1 ? 'court' : 'courts' }}
+      </p>
+      @if (list.items.length) {
+        <div class="table-scroll" role="region" aria-label="Court list" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Court name</th>
+                <th scope="col">Branch</th>
+                <th scope="col">Sport</th>
+                <th scope="col">Environment</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (court of list.items; track court.publicId) {
+                <tr>
+                  <th scope="row">
+                    <strong>{{ court.courtNameEn || court.courtNameAr }}</strong
+                    ><small lang="ar" dir="rtl">{{ court.courtNameAr }}</small>
+                  </th>
+                  <td>{{ court.branch.nameEn || court.branch.nameAr }}</td>
+                  <td>{{ court.sport.nameEn || court.sport.nameAr }}</td>
+                  <td>{{ court.isIndoor ? 'Indoor' : 'Outdoor' }}</td>
+                  <td>
+                    <span class="badge" [class.inactive]="!court.isActive">{{
+                      court.isActive ? 'Active' : 'Inactive'
+                    }}</span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Edit ' + (court.courtNameEn || court.courtNameAr)"
+                      (click)="editCourt.emit(court.publicId)"
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="message">No courts match these filters. Reset filters or add a court.</p>
+      }
+    }
+  </section>
+</main>

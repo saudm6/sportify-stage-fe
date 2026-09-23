@@ -1,0 +1,159 @@
+<h2 mat-dialog-title id="court-dialog-title">{{ data.publicId ? 'Edit court' : 'Add court' }}</h2>
+<mat-dialog-content [attr.aria-busy]="loading() || saving()">
+  @if (loading()) {
+    <p role="status">Loading court details…</p>
+  }
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  @if (!loading() && (!data.publicId || detail())) {
+    <form id="court-form" [formGroup]="form" (ngSubmit)="save()">
+      <fieldset [disabled]="saving()">
+        <div class="fields">
+          <label
+            >English name
+            <input
+              formControlName="courtNameEn"
+              maxlength="150"
+              autocomplete="off"
+              required
+              [attr.aria-invalid]="
+                form.controls.courtNameEn.touched && form.controls.courtNameEn.invalid
+              "
+              aria-describedby="english-error"
+            />
+            @if (form.controls.courtNameEn.touched && form.controls.courtNameEn.invalid) {
+              <small id="english-error" class="error"
+                >Enter an English name, up to 150 characters.</small
+              >
+            }
+          </label>
+          <label
+            >Arabic name
+            <input
+              formControlName="courtNameAr"
+              maxlength="150"
+              autocomplete="off"
+              lang="ar"
+              dir="rtl"
+              required
+              [attr.aria-invalid]="
+                form.controls.courtNameAr.touched && form.controls.courtNameAr.invalid
+              "
+              aria-describedby="arabic-error"
+            />
+            @if (form.controls.courtNameAr.touched && form.controls.courtNameAr.invalid) {
+              <small id="arabic-error" class="error"
+                >Enter an Arabic name, up to 150 characters.</small
+              >
+            }
+          </label>
+          @if (data.publicId) {
+            <label
+              >Branch<input
+                readonly
+                [value]="detail()!.branch.nameEn || detail()!.branch.nameAr"
+              /><small>Branch cannot be changed.</small></label
+            >
+          } @else {
+            <label
+              >Branch<select
+                aria-label="Branch"
+                formControlName="branchPublicId"
+                required
+                aria-describedby="branch-error"
+                [attr.aria-invalid]="
+                  form.controls.branchPublicId.touched && form.controls.branchPublicId.invalid
+                "
+              >
+                <option value="">Choose a branch</option>
+                @for (branch of data.options.branches; track branch.publicId) {
+                  <option [value]="branch.publicId">{{ branch.nameEn || branch.nameAr }}</option>
+                }
+              </select>
+              @if (form.controls.branchPublicId.touched && form.controls.branchPublicId.invalid) {
+                <small id="branch-error" class="error">Choose a branch.</small>
+              }
+            </label>
+          }
+          <label
+            >Sport<select
+              aria-label="Sport"
+              formControlName="sportPublicId"
+              required
+              aria-describedby="sport-error"
+              [attr.aria-invalid]="
+                form.controls.sportPublicId.touched && form.controls.sportPublicId.invalid
+              "
+            >
+              <option value="">Choose a sport</option>
+              @for (sport of data.options.sports; track sport.publicId) {
+                <option [value]="sport.publicId">{{ sport.nameEn || sport.nameAr }}</option>
+              }
+            </select>
+            @if (form.controls.sportPublicId.touched && form.controls.sportPublicId.invalid) {
+              <small id="sport-error" class="error">Choose a sport.</small>
+            }
+          </label>
+          <label
+            >Environment<select aria-label="Environment" formControlName="isIndoor">
+              <option [ngValue]="true">Indoor</option>
+              <option [ngValue]="false">Outdoor</option>
+            </select></label
+          >
+          @if (data.publicId) {
+            <label
+              >Status<select aria-label="Status" formControlName="isActive">
+                <option [ngValue]="true">Active</option>
+                <option [ngValue]="false">Inactive</option>
+              </select></label
+            >
+          }
+        </div>
+        @if (!data.publicId) {
+          <p class="hint">New courts are active.</p>
+        }
+        <h3>Duration prices <span>OMR</span></h3>
+        <p class="hint" id="price-hint">
+          Enter all three prices. Zero is allowed. Use up to three decimal places (maximum
+          9,999,999.999 OMR).
+        </p>
+        <div formArrayName="prices" class="prices">
+          @for (duration of durations; track duration; let index = $index) {
+            <label
+              >{{ duration }} minutes
+              <input
+                [id]="'price-' + duration"
+                type="number"
+                [formControlName]="index"
+                min="0"
+                max="9999999.999"
+                step="0.001"
+                required
+                [attr.aria-invalid]="
+                  form.controls.prices.at(index).touched && form.controls.prices.at(index).invalid
+                "
+                [attr.aria-describedby]="'price-hint price-error-' + duration"
+              />
+              @if (
+                form.controls.prices.at(index).touched && form.controls.prices.at(index).invalid
+              ) {
+                <small class="error" [id]="'price-error-' + duration"
+                  >Enter a price from 0 to 9,999,999.999 with up to three decimal places.</small
+                >
+              }
+            </label>
+          }
+        </div>
+      </fieldset>
+    </form>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button type="button" [disabled]="saving()" (click)="cancel()">Cancel</button>
+  @if (!loading() && (!data.publicId || detail())) {
+    <button type="submit" form="court-form" class="primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : data.publicId ? 'Save changes' : 'Add court' }}
+    </button>
+  }
+</mat-dialog-actions>

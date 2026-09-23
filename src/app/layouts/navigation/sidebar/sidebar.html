@@ -44,6 +44,9 @@
           <a [routerLink]="['/', paths.staff, paths.bookings]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Bookings">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v16H4zM8 2v6M16 2v6M4 11h16M8 15h3M14 15h3"/></svg><span class="label">Bookings</span>
           </a>
+          <a [routerLink]="['/', paths.staff, paths.courts]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Courts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zM12 4v16M3 9h18M3 15h18"/></svg><span class="label">Courts</span>
+          </a>
         }
         @if (!inStaff() && session.roles.includes('USER')) {
           <a [routerLink]="['/' + paths.products]" routerLinkActive="active" ariaCurrentWhenActive="page" aria-label="Products">

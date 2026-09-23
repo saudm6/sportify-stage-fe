@@ -12,6 +12,7 @@ export const staffRoutes: Routes = [
       { path: '', redirectTo: PAGE_PATHS.dashboard, pathMatch: 'full' },
       { path: PAGE_PATHS.dashboard, loadChildren: () => import('./dashboard/dashboard.routes').then(m => m.dashboardRoutes) },
       { path: PAGE_PATHS.bookings, loadComponent: () => import('./bookings/containers/bookings').then(m => m.Bookings) },
+      { path: PAGE_PATHS.courts, loadComponent: () => import('./courts/containers/courts').then(m => m.Courts) },
     ],
   },
 ];
