@@ -209,12 +209,11 @@
           <label
             >Rows per page<select
               #pageSizeSelect
-              [value]="applied().pageSize"
               (change)="changePageSize.emit(+pageSizeSelect.value)"
             >
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
+              @for (size of pageSizeOptions; track size) {
+                <option [value]="size" [selected]="size === applied().pageSize">{{ size }}</option>
+              }
             </select></label
           >
           <div class="actions">

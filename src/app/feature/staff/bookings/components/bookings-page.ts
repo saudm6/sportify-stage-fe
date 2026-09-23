@@ -10,6 +10,7 @@ import { BookingDetailFocus } from '../keyboard/booking-details';
 import { BookingDetails, BookingIdentity, BookingsForm, BookingsQuery } from '../models/bookings';
 import { BookingDatePipe } from '../formatters/booking-date';
 import { RecordedValuePipe, ReferenceNamePipe } from '../formatters/booking-display';
+import { PAGE_SIZE_OPTIONS } from '../../../../shared/functions/pagination';
 
 @Component({
   selector: 'app-bookings-page',
@@ -26,6 +27,7 @@ import { RecordedValuePipe, ReferenceNamePipe } from '../formatters/booking-disp
   styleUrl: './bookings-page.css',
 })
 export class BookingsPage {
+  readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly form = input.required<BookingsForm>();
   readonly applied = input.required<BookingsQuery>();
   readonly report = input<BookingList | null>(null);

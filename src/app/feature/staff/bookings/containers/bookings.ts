@@ -21,6 +21,7 @@ import {
 } from '../models/bookings';
 import { validBookingsFilters } from '../functions/bookings-filters';
 import { defaultBookingsQuery, queryFromParams } from '../functions/bookings-query';
+import { defaultPagination, updatePagination, validPagination } from '../../../../shared/functions/pagination';
 
 const validationMessage = 'Choose valid filters, dates and pagination, then Apply.';
 
@@ -175,30 +176,26 @@ export class Bookings {
           this.report.set(null);
           this.error.set('');
           this.loading.set(false);
-          if (
-            !validBookingsFilters(query) ||
-            !Number.isInteger(query.page) ||
-            query.page < 1 ||
-            query.page > 1000000 ||
-            ![20, 50, 100].includes(query.pageSize)
-          ) {
+          if (validBookingsFilters(query) && validPagination(query)) {
+            if (this.optionsLoaded && this.reconcileSelections(this.options())) return of(null);
+            if (['from', 'to', 'page', 'pageSize'].every((key) => params.has(key))) {
+              this.loading.set(true);
+              return this.service.getList(query).pipe(
+                map((report) => ({ report, error: '' })),
+                catchError((error) => of({ report: null, error: requestError(error) })),
+              );
+            } else {
+              void this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: query,
+                replaceUrl: true,
+              });
+              return of(null);
+            }
+          } else {
             this.validation.set(validationMessage);
             return of(null);
           }
-          if (this.optionsLoaded && this.reconcileSelections(this.options())) return of(null);
-          if (['from', 'to', 'page', 'pageSize'].some((key) => !params.has(key))) {
-            void this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: query,
-              replaceUrl: true,
-            });
-            return of(null);
-          }
-          this.loading.set(true);
-          return this.service.getList(query).pipe(
-            map((report) => ({ report, error: '' })),
-            catchError((error) => of({ report: null, error: requestError(error) })),
-          );
         }),
         takeUntilDestroyed(),
       )
@@ -277,18 +274,18 @@ export class Bookings {
   }
   apply() {
     const filters: BookingsFilters = this.form.getRawValue();
-    if (!validBookingsFilters(filters)) {
+    if (validBookingsFilters(filters)) {
+      return this.navigate({
+        ...filters,
+        status: filters.status.trim(),
+        search: filters.search.trim(),
+        ...(updatePagination(this.applied(), { page: 1 }) ?? defaultPagination()),
+      });
+    } else {
       this.form.markAllAsTouched();
       this.validation.set(validationMessage);
       return Promise.resolve(false);
     }
-    return this.navigate({
-      ...filters,
-      status: filters.status.trim(),
-      search: filters.search.trim(),
-      page: 1,
-      pageSize: [20, 50, 100].includes(this.applied().pageSize) ? this.applied().pageSize : 20,
-    });
   }
   reset() {
     const query = defaultBookingsQuery();
@@ -297,12 +294,12 @@ export class Bookings {
     return this.navigate(query);
   }
   setPage(page: number) {
-    if (!Number.isInteger(page) || page < 1 || page > 1000000) return Promise.resolve(false);
-    return this.navigate({ ...this.applied(), page });
+    const pagination = updatePagination(this.applied(), { page });
+    return pagination ? this.navigate({ ...this.applied(), ...pagination }) : Promise.resolve(false);
   }
   setPageSize(pageSize: number) {
-    if (![20, 50, 100].includes(pageSize)) return Promise.resolve(false);
-    return this.navigate({ ...this.applied(), page: 1, pageSize });
+    const pagination = updatePagination(this.applied(), { pageSize });
+    return pagination ? this.navigate({ ...this.applied(), ...pagination }) : Promise.resolve(false);
   }
   openDetails(row: BookingReportEntry) {
     const identity = { bookingType: row.bookingType, bookingPublicId: row.bookingPublicId };

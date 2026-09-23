@@ -1,6 +1,7 @@
 import { ParamMap } from '@angular/router';
 import { dateRange } from '../../shared/functions/dates';
 import { BookingsQuery } from '../models/bookings';
+import { defaultPagination } from '../../../../shared/functions/pagination';
 
 export const defaultBookingsQuery = (): BookingsQuery => ({
   ...dateRange('month'),
@@ -10,8 +11,7 @@ export const defaultBookingsQuery = (): BookingsQuery => ({
   status: '',
   bookingType: '',
   search: '',
-  page: 1,
-  pageSize: 20,
+  ...defaultPagination(),
 });
 
 export function queryFromParams(params: ParamMap): BookingsQuery {
@@ -30,7 +30,11 @@ export function queryFromParams(params: ParamMap): BookingsQuery {
   }
   const page = params.get('page');
   const size = params.get('pageSize');
-  query.page = page === null ? 1 : /^\d+$/.test(page) ? Number(page) : NaN;
-  query.pageSize = size === null ? 20 : /^\d+$/.test(size) ? Number(size) : NaN;
+  if (page !== null) {
+    query.page = /^\d+$/.test(page) ? Number(page) : NaN;
+  }
+  if (size !== null) {
+    query.pageSize = /^\d+$/.test(size) ? Number(size) : NaN;
+  }
   return query;
 }

@@ -1,62 +1,177 @@
 <main>
   <header class="page-heading">
-    <div><h1>Booking overview</h1><p>Your courts, by the numbers.</p></div>
-    <div class="report-context">OMR <span>Oman time (UTC+4)</span></div>
+    <div>
+      <h1>Booking overview</h1>
+      <p>Your courts, by the numbers.</p>
+    </div>
+    <div class="report-context">
+      OMR
+      <span>Oman time (UTC+4)</span>
+    </div>
   </header>
 
   <form [formGroup]="form()" (ngSubmit)="applyFilters.emit()" class="filters">
-    <fieldset class="presets"><legend>Date range</legend>
+    <fieldset class="presets">
+      <legend>Date range</legend>
       @for (item of presets; track item.value) {
-        <button type="button" [attr.aria-pressed]="preset() === item.value" (click)="choosePreset.emit(item.value)">{{ item.label }}</button>
+        <button
+          type="button"
+          [attr.aria-pressed]="preset() === item.value"
+          (click)="choosePreset.emit(item.value)"
+        >
+          {{ item.label }}
+        </button>
       }
     </fieldset>
     <div class="filter-fields">
-      <label>From (required)<input type="date" formControlName="from" (input)="choosePreset.emit('custom')" /></label>
-      <label>To (required)<input type="date" formControlName="to" (input)="choosePreset.emit('custom')" /></label>
-      <label><span id="branch-label">Branch</span><select formControlName="branchPublicId" aria-labelledby="branch-label"><option value="">All branches</option>
-        @for (branch of options().branches; track branch.publicId) { <option [value]="branch.publicId">{{ branch.nameEn || branch.nameAr }}</option> }
-      </select></label>
-      <label><span id="sport-label">Sport</span><select formControlName="sportPublicId" aria-labelledby="sport-label"><option value="">All sports</option>
-        @for (sport of options().sports; track sport.publicId) { <option [value]="sport.publicId">{{ sport.nameEn || sport.nameAr }}</option> }
-      </select></label>
+      <label>
+        From (required)
+        <input type="date" formControlName="from" (input)="choosePreset.emit('custom')" />
+      </label>
+      <label>
+        To (required)
+        <input type="date" formControlName="to" (input)="choosePreset.emit('custom')" />
+      </label>
+      <label>
+        <span id="branch-label">Branch</span>
+        <select formControlName="branchPublicId" aria-labelledby="branch-label">
+          <option value="">All branches</option>
+          @for (branch of options().branches; track branch.publicId) {
+            <option [value]="branch.publicId">{{ branch.nameEn || branch.nameAr }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span id="sport-label">Sport</span>
+        <select formControlName="sportPublicId" aria-labelledby="sport-label">
+          <option value="">All sports</option>
+          @for (sport of options().sports; track sport.publicId) {
+            <option [value]="sport.publicId">{{ sport.nameEn || sport.nameAr }}</option>
+          }
+        </select>
+      </label>
       <button class="primary" type="submit">Apply</button>
       <button type="button" (click)="resetFilters.emit()">Reset</button>
     </div>
     <p class="hint">Date presets use Oman time. This week runs Monday to Sunday.</p>
-    @if (validation()) { <p role="alert" class="error">{{ validation() }}</p> }
-    @if (optionsLoading()) { <p role="status">Loading filter options...</p> }
-    @if (optionsError()) { <p class="error" role="alert">{{ optionsError() }} <button type="button" (click)="retryOptions.emit()">Retry filter options</button></p> }
+    @if (validation()) {
+      <p role="alert" class="error">{{ validation() }}</p>
+    }
+    @if (optionsLoading()) {
+      <p role="status">Loading filter options...</p>
+    }
+    @if (optionsError()) {
+      <p class="error" role="alert">
+        {{ optionsError() }}
+        <button type="button" (click)="retryOptions.emit()">Retry filter options</button>
+      </p>
+    }
   </form>
 
   <section class="results" [attr.aria-busy]="loading()" aria-label="Booking metrics">
     <div class="results-heading">
-      <div><h2>Confirmed bookings</h2><p>Booking starts from <strong>{{ applied().from }}</strong> through <strong>{{ applied().to }}</strong>, inclusive.</p></div>
-      <div class="bookings-link"><a [routerLink]="['/', paths.staff, paths.bookings]" [queryParams]="{ from: applied().from, to: applied().to, branchPublicId: applied().branchPublicId, sportPublicId: applied().sportPublicId, status: 'CONFIRMED', page: 1, pageSize: 20 }">View bookings</a></div>
+      <div>
+        <h2>Confirmed bookings</h2>
+        <p>
+          Booking starts from <strong>{{ applied().from }}</strong> through
+          <strong>{{ applied().to }}</strong>, inclusive.
+        </p>
+      </div>
+      <div class="bookings-link">
+        <a
+          [routerLink]="['/', paths.staff, paths.bookings]"
+          [queryParams]="{
+            from: applied().from,
+            to: applied().to,
+            branchPublicId: applied().branchPublicId,
+            sportPublicId: applied().sportPublicId,
+            status: 'CONFIRMED',
+            page: pagination.page,
+            pageSize: pagination.pageSize
+          }"
+        >
+          View bookings
+        </a>
+      </div>
     </div>
-    <p class="scope-note">Internal and external bookings with confirmed status only. Revenue follows the booking date, not the payment date.</p>
+    <p class="scope-note">
+      Internal and external bookings with confirmed status only. Revenue follows the booking date,
+      not the payment date.
+    </p>
     @if (loading()) {
       <div class="status" role="status">Loading booking metrics…</div>
     } @else if (error()) {
-      <div class="status" role="alert"><h3>Metrics unavailable</h3><p>{{ error() }}</p><button class="primary" type="button" (click)="retry.emit()">Retry</button></div>
+      <div class="status" role="alert">
+        <h3>Metrics unavailable</h3>
+        <p>{{ error() }}</p>
+        <button class="primary" type="button" (click)="retry.emit()">Retry</button>
+      </div>
     } @else if (report(); as data) {
       <dl class="metrics">
-        <div><dt>Confirmed bookings</dt><dd>{{ data.summary.totalBookings | number:'1.0-0' }}</dd></div>
-        <div><dt>Booking revenue <span>OMR</span></dt><dd>{{ data.summary.totalBookingRevenue | number:'1.3-3' }}</dd></div>
-        <div><dt>Average booking value <span>OMR</span></dt><dd>{{ data.summary.averageBookingValue | number:'1.3-3' }}</dd></div>
+        <div>
+          <dt>Confirmed bookings</dt>
+          <dd>{{ data.summary.totalBookings | number: '1.0-0' }}</dd>
+        </div>
+        <div>
+          <dt>
+            Booking revenue
+            <span>OMR</span>
+          </dt>
+          <dd>{{ data.summary.totalBookingRevenue | number: '1.3-3' }}</dd>
+        </div>
+        <div>
+          <dt>
+            Average booking value
+            <span>OMR</span>
+          </dt>
+          <dd>{{ data.summary.averageBookingValue | number: '1.3-3' }}</dd>
+        </div>
       </dl>
       @if (data.summary.totalBookings === 0) {
-        <div class="empty"><h3>No confirmed bookings</h3><p>Try a wider date range or reset the branch and sport filters.</p></div>
+        <div class="empty">
+          <h3>No confirmed bookings</h3>
+          <p>Try a wider date range or reset the branch and sport filters.</p>
+        </div>
       }
       <div class="breakdowns">
-        @for (panel of [{title: 'Revenue by branch', rows: data.byBranch}, {title: 'Revenue by sport', rows: data.bySport}]; track panel.title) {
-          <section class="breakdown"><h3>{{ panel.title }}</h3><p class="hint">Share of selected booking revenue</p>
+        @for (
+          panel of [
+            { title: 'Revenue by branch', rows: data.byBranch },
+            { title: 'Revenue by sport', rows: data.bySport }
+          ];
+          track panel.title
+        ) {
+          <section class="breakdown">
+            <h3>{{ panel.title }}</h3>
+            <p class="hint">Share of selected booking revenue</p>
             <ul>
               @for (row of panel.rows; track row.publicId) {
-                <li><div class="row-heading"><h4>{{ row.nameEn || row.nameAr }}</h4><strong>{{ row.totalBookingRevenue | number:'1.3-3' }} <span>OMR</span></strong></div>
-                  <div class="bar-track" aria-hidden="true"><div class="bar" [style.width.%]="data.summary.totalBookingRevenue > 0 ? row.totalBookingRevenue / data.summary.totalBookingRevenue * 100 : 0"></div></div>
-                  <p class="row-detail"><span>{{ row.totalBookings | number:'1.0-0' }} bookings</span><span>Average {{ row.averageBookingValue | number:'1.3-3' }} OMR</span></p>
+                <li>
+                  <div class="row-heading">
+                    <h4>{{ row.nameEn || row.nameAr }}</h4>
+                    <strong>
+                      {{ row.totalBookingRevenue | number: '1.3-3' }}
+                      <span>OMR</span>
+                    </strong>
+                  </div>
+                  <div class="bar-track" aria-hidden="true">
+                    <div
+                      class="bar"
+                      [style.width.%]="
+                        data.summary.totalBookingRevenue > 0
+                          ? row.totalBookingRevenue / data.summary.totalBookingRevenue * 100
+                          : 0
+                      "
+                    ></div>
+                  </div>
+                  <p class="row-detail">
+                    <span>{{ row.totalBookings | number: '1.0-0' }} bookings</span>
+                    <span>Average {{ row.averageBookingValue | number: '1.3-3' }} OMR</span>
+                  </p>
                 </li>
-              } @empty { <li class="no-data">No confirmed bookings in this breakdown.</li> }
+              } @empty {
+                <li class="no-data">No confirmed bookings in this breakdown.</li>
+              }
             </ul>
           </section>
         }
