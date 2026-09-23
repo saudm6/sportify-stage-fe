@@ -8,6 +8,8 @@ The dashboard uses independent booking-report and booking-filters endpoints and 
 
 The sidebar offers role-authorized destinations, an authorized Sportify home link, the Profile disclosure with My Account and Sign out, and area switching for ADMIN + USER accounts. Desktop defaults expanded; its compact rail keeps navigation accessible and preserves its state across protected pages. At widths up to 900px, navigation defaults closed behind an edge toggle. The mobile drawer traps focus, makes page content inert, closes on Escape/backdrop/navigation (including selecting the current page), and returns focus to the toggle. Resizing or toggling does not recreate the page. Reload persistence is intentionally unnecessary.
 
+The desktop sidebar stays pinned while the document scrolls. Navigation scrolls independently within the viewport, leaving the collapse/expand control visible; compact-rail labels render outside the scroll area. Verified with a 40-row product list at 1440×600 after scrolling 1,200px, including keyboard access to Sign out and mobile focus/dismissal at 390×600.
+
 `core/role.guard.ts` reads each route's `data.allowedRoles`. It requires at least one matching role for every configured ancestor/child policy and denies access if no policy is configured. Staff declares `['ADMIN', 'FINANCE', 'SUPERVISOR']`. Login landing-page selection remains separate.
 
 ## Display and filters
