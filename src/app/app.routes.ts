@@ -8,8 +8,7 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [roleGuard],
-    data: { allowedRoles: ['USER', 'ADMIN', 'FINANCE', 'SUPERVISOR'] },
-    loadComponent: () => import('./layouts/app-layout/app-layout').then(m => m.AppLayout),
+    data: { allowedRoles: ['USER', 'ADMIN', 'FINANCE', 'SUPERVISOR'], showSidebar: true },
     children: [
       {
         path: PAGE_PATHS.account,
